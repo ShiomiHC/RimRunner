@@ -1,0 +1,4 @@
+bin/
+obj/
+# 产出根：报告、台账、截图与导出档，每轮重写
+RimRunner/output/

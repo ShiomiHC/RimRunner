@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!-- 占位的产品工程。已有自己的 mod 工程时删掉本目录，把编排描述符与测试工程里的引用改指自己的工程 -->
+    <PropertyGroup>
+        <RootNamespace>ExampleMod</RootNamespace>
+        <AssemblyName>ExampleMod</AssemblyName>
+        <!-- 产品 mod 的 Assemblies 目录：编排描述符 [[builds]] 的 dll 指的就是这里 -->
+        <OutputPath>..\..\ExampleMod\1.7\Assemblies\</OutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp" HintPath="$(RimWorldDir)\Assembly-CSharp.dll" Private="False"/>
+        <Reference Include="UnityStubs" HintPath="$(RimWorldDir)\UnityStubs.dll" Private="False"/>
+    </ItemGroup>
+</Project>

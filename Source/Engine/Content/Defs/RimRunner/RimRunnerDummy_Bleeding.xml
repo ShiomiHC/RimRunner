@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <BodyPartDef ParentName="RimRunnerDummy_CorePart">
+    <defName>RimRunnerDummyBleeding_Core</defName>
+    <bleedRate>1</bleedRate>
+  </BodyPartDef>
+
+  <BodyPartDef ParentName="RimRunnerDummyBare_CorePart">
+    <defName>RimRunnerDummyBareBleeding_Core</defName>
+    <bleedRate>1</bleedRate>
+  </BodyPartDef>
+
+  <BodyDef>
+    <defName>RimRunnerDummyBleeding_Body</defName>
+    <label>test dummy</label>
+    <corePart>
+      <def>RimRunnerDummyBleeding_Core</def>
+      <height>Middle</height>
+      <depth>Outside</depth>
+      <groups>
+        <li>Torso</li>
+      </groups>
+    </corePart>
+  </BodyDef>
+
+  <BodyDef>
+    <defName>RimRunnerDummyBareBleeding_Body</defName>
+    <label>test dummy</label>
+    <corePart>
+      <def>RimRunnerDummyBareBleeding_Core</def>
+      <height>Middle</height>
+      <depth>Outside</depth>
+      <groups>
+        <li>Torso</li>
+      </groups>
+    </corePart>
+  </BodyDef>
+
+  <HediffGiverSetDef>
+    <defName>RimRunnerDummy_Bleeding</defName>
+    <hediffGivers>
+      <li Class="HediffGiver_Bleeding">
+        <hediff>BloodLoss</hediff>
+      </li>
+    </hediffGivers>
+  </HediffGiverSetDef>
+
+  <ThingDef ParentName="RimRunnerDummyBase" Name="RimRunnerDummyBleedingBase" Abstract="True">
+    <race>
+      <bloodDef>Filth_Blood</bloodDef>
+      <bloodSmearDef>Filth_BloodSmear</bloodSmearDef>
+      <hediffGiverSets>
+        <li>RimRunnerDummy_Bleeding</li>
+      </hediffGiverSets>
+    </race>
+  </ThingDef>
+
+  <ThingDef ParentName="RimRunnerDummyBleedingBase">
+    <defName>RimRunnerDummyBleeding</defName>
+    <label>test dummy (bleeding)</label>
+    <race>
+      <body>RimRunnerDummyBleeding_Body</body>
+    </race>
+  </ThingDef>
+
+  <PawnKindDef ParentName="RimRunnerDummyKindBase">
+    <defName>RimRunnerDummyBleeding</defName>
+    <label>test dummy (bleeding)</label>
+    <race>RimRunnerDummyBleeding</race>
+  </PawnKindDef>
+
+</Defs>

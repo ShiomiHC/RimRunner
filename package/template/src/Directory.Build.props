@@ -1,0 +1,19 @@
+<Project>
+    <!-- src 下全部工程共用：框架、语言版本、构建形态与游戏程序集位置 -->
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+        <!-- 与游戏运行时同口径：游戏运行在 .NET 10 上 -->
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>disable</Nullable>
+        <DebugType>none</DebugType>
+        <!-- OutputPath 即 dll 的最终位置；追加 net10.0\ 子目录时游戏仍加载上一份 dll，
+             编排描述符 [[builds]] 与 [testMod] 的 dll 也指向不存在的路径 -->
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <!-- mod 的 Assemblies 目录里只放程序集 -->
+        <GenerateDependencyFile>false</GenerateDependencyFile>
+
+        <!-- 游戏根与 Harmony 程序集位置：改成本机路径，或用环境变量 / -p:RimWorldDir=… 覆盖 -->
+        <RimWorldDir Condition=" '$(RimWorldDir)' == '' ">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
+        <HarmonyAssembliesDir Condition=" '$(HarmonyAssembliesDir)' == '' ">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077\1.7\Assemblies</HarmonyAssembliesDir>
+    </PropertyGroup>
+</Project>

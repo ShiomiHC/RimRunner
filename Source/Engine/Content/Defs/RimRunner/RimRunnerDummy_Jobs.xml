@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <JobDef>
+    <defName>RimRunnerDummyHold</defName>
+    <driverClass>RimRunner.RimRunnerDummyJobDriver_Hold</driverClass>
+    <reportString>standing.</reportString>
+    <suspendable>false</suspendable>
+  </JobDef>
+
+</Defs>

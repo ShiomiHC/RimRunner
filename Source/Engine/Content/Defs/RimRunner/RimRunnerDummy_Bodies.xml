@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <BodyPartDef Name="RimRunnerDummy_CorePart">
+    <defName>RimRunnerDummy_Core</defName>
+    <label>dummy core</label>
+    <hitPoints>150</hitPoints>
+    <bleedRate>0</bleedRate>
+    <permanentInjuryChanceFactor>0</permanentInjuryChanceFactor>
+    <frostbiteVulnerability>1</frostbiteVulnerability>
+    <canSuggestAmputation>false</canSuggestAmputation>
+    <tags>
+      <li>ConsciousnessSource</li>
+      <li>BloodPumpingSource</li>
+      <li>BloodFiltrationSource</li>
+      <li>BreathingSource</li>
+      <li>EatingSource</li>
+      <li>HearingSource</li>
+      <li>MetabolismSource</li>
+      <li>SightSource</li>
+      <li>TalkingSource</li>
+      <li>MovingLimbCore</li>
+      <li>ManipulationLimbCore</li>
+    </tags>
+  </BodyPartDef>
+
+  <BodyPartDef Name="RimRunnerDummyBare_CorePart">
+    <defName>RimRunnerDummyBare_Core</defName>
+    <label>dummy core</label>
+    <hitPoints>150</hitPoints>
+    <bleedRate>0</bleedRate>
+    <permanentInjuryChanceFactor>0</permanentInjuryChanceFactor>
+    <frostbiteVulnerability>1</frostbiteVulnerability>
+    <canSuggestAmputation>false</canSuggestAmputation>
+  </BodyPartDef>
+
+  <BodyDef>
+    <defName>RimRunnerDummy_Body</defName>
+    <label>test dummy</label>
+    <corePart>
+      <def>RimRunnerDummy_Core</def>
+      <height>Middle</height>
+      <depth>Outside</depth>
+      <groups>
+        <li>Torso</li>
+      </groups>
+    </corePart>
+  </BodyDef>
+
+  <BodyDef>
+    <defName>RimRunnerDummyBare_Body</defName>
+    <label>test dummy</label>
+    <corePart>
+      <def>RimRunnerDummyBare_Core</def>
+      <height>Middle</height>
+      <depth>Outside</depth>
+      <groups>
+        <li>Torso</li>
+      </groups>
+    </corePart>
+  </BodyDef>
+
+</Defs>

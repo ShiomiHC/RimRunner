@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <GenStepDef>
+    <defName>RimRunner_IsolatedMapFloor</defName>
+    <order>10</order>
+    <genStep Class="RimRunner.RimRunnerIsolatedMapGenStep" />
+  </GenStepDef>
+
+  <MapGeneratorDef>
+    <defName>RimRunner_IsolatedMap</defName>
+    <genSteps>
+      <li>RimRunner_IsolatedMapFloor</li>
+    </genSteps>
+    <ignoreAreaRevealedLetter>true</ignoreAreaRevealedLetter>
+    <disableCallAid>true</disableCallAid>
+  </MapGeneratorDef>
+
+  <MapGeneratorDef>
+    <defName>RimRunner_PocketMap</defName>
+    <genSteps>
+      <li>RimRunner_IsolatedMapFloor</li>
+    </genSteps>
+    <ignoreAreaRevealedLetter>true</ignoreAreaRevealedLetter>
+    <disableCallAid>true</disableCallAid>
+    <pocketMapProperties>
+      <biome>Underground</biome>
+      <temperature>21</temperature>
+    </pocketMapProperties>
+  </MapGeneratorDef>
+
+  <WorldObjectDef ParentName="StaticWorldObjectBase">
+    <defName>RimRunner_IsolatedSettlement</defName>
+    <label>RimRunner test site</label>
+    <description>A settlement the RimRunner engine creates for an isolated test map and removes after the run.</description>
+    <worldObjectClass>RimWorld.Planet.Settlement</worldObjectClass>
+    <canBePlayerHome>true</canBePlayerHome>
+  </WorldObjectDef>
+
+  <PlanetLayerDef>
+    <defName>RimRunner_ParallelSiteLayer</defName>
+    <label>RimRunner parallel site layer</label>
+    <layerType>RimWorld.SurfaceLayer</layerType>
+    <tileType>RimWorld.Planet.SurfaceTile</tileType>
+    <generatedLocationFactor>0</generatedLocationFactor>
+    <canFormCaravans>false</canFormCaravans>
+    <viewGizmoTexPath>UI/Commands/ViewPlanet</viewGizmoTexPath>
+    <gerundLabel>on</gerundLabel>
+  </PlanetLayerDef>
+
+</Defs>

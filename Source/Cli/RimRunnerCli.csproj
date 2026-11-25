@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>rimrunner</AssemblyName>
+    <RootNamespace>RimRunnerCli</RootNamespace>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030;CS8509</WarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatformAttribute">
+      <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Engine\Core\RimRunnerEngineArgs.cs" Link="Engine\RimRunnerEngineArgs.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerNewGameDescriptor.cs" Link="Engine\RimRunnerNewGameDescriptor.cs" />
+    <Compile Include="..\Engine\Core\DescriptorKeyAttribute.cs" Link="Engine\DescriptorKeyAttribute.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerRunId.cs" Link="Engine\RimRunnerRunId.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerDataLayout.cs" Link="Engine\RimRunnerDataLayout.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerFilmPitch.cs" Link="Engine\RimRunnerFilmPitch.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerFilmAudioRows.cs" Link="Engine\RimRunnerFilmAudioRows.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerOutcomes.cs" Link="Engine\RimRunnerOutcomes.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerAssertLine.cs" Link="Engine\RimRunnerAssertLine.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerVerdict.cs" Link="Engine\RimRunnerVerdict.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerArchiveName.cs" Link="Engine\RimRunnerArchiveName.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerWireKeys.cs" Link="Engine\RimRunnerWireKeys.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerObservationKeys.cs" Link="Engine\RimRunnerObservationKeys.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerLiveContract.cs" Link="Engine\RimRunnerLiveContract.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerDriveTable.cs" Link="Engine\RimRunnerDriveTable.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerWarningKey.cs" Link="Engine\RimRunnerWarningKey.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerPackagePresence.cs" Link="Engine\RimRunnerPackagePresence.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerKind.cs" Link="Engine\RimRunnerKind.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerCaseGroups.cs" Link="Engine\RimRunnerCaseGroups.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerExperiments.cs" Link="Engine\RimRunnerExperiments.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerLedgerFold.cs" Link="Engine\RimRunnerLedgerFold.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerAckMissText.cs" Link="Engine\RimRunnerAckMissText.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerPipeFrame.cs" Link="Engine\RimRunnerPipeFrame.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerPipeOutbox.cs" Link="Engine\RimRunnerPipeOutbox.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerPipeWatchdog.cs" Link="Engine\RimRunnerPipeWatchdog.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerPipeProtocol.cs" Link="Engine\RimRunnerPipeProtocol.cs" />
+    <Compile Include="..\Engine\Core\RimRunnerOutputPath.cs" Link="Engine\RimRunnerOutputPath.cs" />
+    <Compile Include="..\Observe\ObservationCore.cs" Link="Observe\ObservationCore.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <ProjectReference Include="..\..\RimTooling\Sources\RimTooling.Cli\RimTooling.Cli.csproj" />
+    <ProjectReference Include="..\..\RimTooling\Sources\RimTooling.Platform\RimTooling.Platform.csproj" />
+    <ProjectReference Include="..\..\RimTooling\Sources\RimTooling.RimWorld\RimTooling.RimWorld.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="RimTooling.Cli" />
+  </ItemGroup>
+
+  <Target Name="KeepWindowsRuntimes" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)"
+        Condition="!$([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.RuntimeIdentifier)').StartsWith('win'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

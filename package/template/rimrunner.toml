@@ -1,0 +1,17 @@
+product = "ExampleMod"
+saveNamePrefix = "ExampleModTest"
+defaultModList = "base"
+requiredMods = ["brrainz.harmony"]
+
+[[units]]
+source = "ExampleMod"
+
+[[builds]]
+csproj = "src/ExampleMod/ExampleMod.csproj"
+dll = "ExampleMod/1.7/Assemblies/ExampleMod.dll"
+
+[testMod]
+idPrefix = "yourname.examplemod.rimrunner"
+csproj = "src/ExampleModTests/ExampleModTests.csproj"
+dll = "src/ExampleModTests/bin/Release/ExampleModTests.dll"
+supportedVersion = "1.7"

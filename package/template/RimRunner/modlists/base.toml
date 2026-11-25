@@ -1,0 +1,7 @@
+# 按加载顺序写 packageId。不列测试 mod：CLI 在套用名单后自动追加
+# 这份名单平时只执行几组用例时可写 `[rimrunner]` 段：`groups = ["<组>", "<组>"]`（组由用例类上的 [RimRunnerGroup] 声明；不写即不按组过滤）
+mods = [
+    "brrainz.harmony",
+    "ludeon.rimworld",
+    "yourname.examplemod",
+]

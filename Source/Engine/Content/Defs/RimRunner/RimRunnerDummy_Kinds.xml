@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <PawnKindDef Name="RimRunnerDummyKindBase" Abstract="True">
+    <combatPower>0</combatPower>
+    <apparelIgnoreSeasons>true</apparelIgnoreSeasons>
+    <apparelIgnorePollution>true</apparelIgnorePollution>
+    <allowOldAgeInjuries>false</allowOldAgeInjuries>
+    <canBeScattered>false</canBeScattered>
+    <lifeStages>
+      <li>
+        <bodyGraphicData>
+          <texPath>Things/Pawn/Animal/Cow/Bull</texPath>
+          <drawSize>1.5</drawSize>
+        </bodyGraphicData>
+        <dessicatedBodyGraphicData>
+          <texPath>Things/Pawn/Animal/Cow/Dessicated_Bull</texPath>
+          <drawSize>1.5</drawSize>
+        </dessicatedBodyGraphicData>
+      </li>
+    </lifeStages>
+  </PawnKindDef>
+
+  <PawnKindDef ParentName="RimRunnerDummyKindBase">
+    <defName>RimRunnerDummy</defName>
+    <label>test dummy</label>
+    <race>RimRunnerDummy</race>
+  </PawnKindDef>
+
+  <PawnKindDef ParentName="RimRunnerDummyKindBase">
+    <defName>RimRunnerDummyBare</defName>
+    <label>test dummy (bare)</label>
+    <race>RimRunnerDummyBare</race>
+  </PawnKindDef>
+
+  <PawnKindDef ParentName="RimRunnerDummyKindBase">
+    <defName>RimRunnerDummyHumanBody</defName>
+    <label>test dummy (human body)</label>
+    <race>RimRunnerDummyHumanBody</race>
+  </PawnKindDef>
+
+</Defs>

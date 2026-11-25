@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>ExampleModTests</RootNamespace>
+        <AssemblyName>ExampleModTests</AssemblyName>
+        <!-- 测试程序集不进产品 mod，CLI 合成测试 mod 时从这里取：编排描述符 [testMod] 的 dll 指的就是这里 -->
+        <OutputPath>bin\Release\</OutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="0Harmony" HintPath="$(HarmonyAssembliesDir)\0Harmony.dll" Private="False"/>
+        <Reference Include="Assembly-CSharp" HintPath="$(RimWorldDir)\Assembly-CSharp.dll" Private="False"/>
+        <Reference Include="UnityStubs" HintPath="$(RimWorldDir)\UnityStubs.dll" Private="False"/>
+        <ProjectReference Include="..\ExampleMod\ExampleMod.csproj" Private="False"/>
+    </ItemGroup>
+    <!-- 引擎经 RimRunner 安装目录引用：其中的 RimRunner.targets 管引用哪个文件。构建读环境变量 RimRunnerHome，
+         rimrunner 开始执行前核测试 DLL 引用的是不是它所在的那个安装目录 -->
+    <Import Project="$(RimRunnerHome)\RimRunner.targets" Condition="Exists('$(RimRunnerHome)\RimRunner.targets')"/>
+    <!-- 安装目录缺席时 Import 不报错、编译器只报一屏「找不到 RimRunner 命名空间」，换成一句指名的失败 -->
+    <Target Name="VerifyRimRunnerHome" BeforeTargets="BeforeBuild">
+        <Error Condition=" !Exists('$(RimRunnerHome)\RimRunner.targets') "
+               Text="找不到 RimRunner 安装目录（RimRunnerHome = '$(RimRunnerHome)'）。把环境变量 RimRunnerHome 设为 rimrunner.exe 所在的目录"/>
+    </Target>
+</Project>

@@ -1,0 +1,7 @@
+M:System.IO.Directory.GetCurrentDirectory;改用 CommandContext.CurrentDirectory：转发到编排进程的命令读进程 cwd 只会读到编排进程自己的
+P:System.Environment.CurrentDirectory;改用 CommandContext.CurrentDirectory：转发到编排进程的命令读进程 cwd 只会读到编排进程自己的
+M:System.Environment.GetEnvironmentVariable(System.String);改用 CommandContext.GetEnvironmentVariable：转发到编排进程的命令读进程环境只会读到编排进程自己的
+M:System.Environment.GetEnvironmentVariable(System.String,System.EnvironmentVariableTarget);改用 CommandContext.GetEnvironmentVariable：转发到编排进程的命令读进程环境只会读到编排进程自己的
+M:System.Environment.GetEnvironmentVariables;改用 CommandContext.EnvironmentSnapshot：转发到编排进程的命令读进程环境只会读到编排进程自己的
+M:System.Environment.GetEnvironmentVariables(System.EnvironmentVariableTarget);改用 CommandContext.EnvironmentSnapshot：转发到编排进程的命令读进程环境只会读到编排进程自己的
+M:System.IO.Path.GetFullPath(System.String);改用 CommandContext.FullPath：单参重载把相对路径按进程 cwd 补全，转发到编排进程时补成编排进程的

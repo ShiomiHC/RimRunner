@@ -1,0 +1,5 @@
+# 引擎类型恒落单一命名空间 RimRunner，与所在子目录无关。引擎工程（EngineBuild）与 CLI 都按链接把这里的源码编进去，
+# Rider 按工程的 RootNamespace + 链接目录推「应有命名空间」（RimRunner.Engine.Infra、RimRunnerCli.… 之类），
+# 不关则报命名空间与位置不符，成批 quick-fix / cleanup 会把引擎拆进按目录分的命名空间，作者面的类型名随之全变
+[*.cs]
+resharper_check_namespace_highlighting = none

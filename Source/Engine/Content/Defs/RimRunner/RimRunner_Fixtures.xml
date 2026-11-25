@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <HediffDef>
+    <defName>RimRunner_Pinned</defName>
+    <label>RimRunner pinned</label>
+    <description>Applied by the RimRunner engine to hold a test pawn down and awake. Removed when the test ends.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.6, 0.6, 0.9)</defaultLabelColor>
+    <isBad>true</isBad>
+    <preventsCrawling>true</preventsCrawling>
+    <stages>
+      <li>
+        <capMods>
+          <li>
+            <capacity>Moving</capacity>
+            <setMax>0.1</setMax>
+          </li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <AbilityDef>
+    <defName>RimRunner_ProbeAbility</defName>
+    <label>RimRunner probe</label>
+    <description>A no-op ability the RimRunner engine casts to exercise ability observation.</description>
+    <targetRequired>false</targetRequired>
+    <cooldownTicksRange>600</cooldownTicksRange>
+    <verbProperties>
+      <verbClass>Verb_CastAbility</verbClass>
+      <range>1.9</range>
+      <warmupTime>3</warmupTime>
+      <requireLineOfSight>false</requireLineOfSight>
+      <drawAimPie>false</drawAimPie>
+      <targetParams>
+        <canTargetSelf>true</canTargetSelf>
+      </targetParams>
+    </verbProperties>
+  </AbilityDef>
+
+</Defs>

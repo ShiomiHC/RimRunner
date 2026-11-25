@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <ThinkTreeDef>
+    <defName>RimRunnerDummy_Main</defName>
+    <thinkRoot Class="RimRunner.RimRunnerDummyThinkNode_Priority">
+      <subNodes>
+        <li Class="RimRunner.RimRunnerDummyJobGiver_Hold" />
+      </subNodes>
+    </thinkRoot>
+  </ThinkTreeDef>
+
+  <ThinkTreeDef>
+    <defName>RimRunnerDummy_Constant</defName>
+    <thinkRoot Class="RimRunner.RimRunnerDummyThinkNode_Priority" />
+  </ThinkTreeDef>
+
+  <ThinkTreeDef>
+    <defName>RimRunnerDummy_Hold</defName>
+    <thinkRoot Class="RimRunner.RimRunnerDummyJobGiver_Hold" />
+    <modExtensions>
+      <li Class="RimRunner.RimRunnerDummyThinkTreeExtension">
+        <moves>false</moves>
+        <attacks>false</attacks>
+        <initiates>false</initiates>
+      </li>
+    </modExtensions>
+  </ThinkTreeDef>
+
+  <ThinkTreeDef>
+    <defName>RimRunnerDummy_Wait</defName>
+    <thinkRoot Class="RimRunner.RimRunnerDummyJobGiver_Wait" />
+    <modExtensions>
+      <li Class="RimRunner.RimRunnerDummyThinkTreeExtension">
+        <moves>false</moves>
+        <attacks>true</attacks>
+        <initiates>false</initiates>
+      </li>
+    </modExtensions>
+  </ThinkTreeDef>
+
+  <ThinkTreeDef>
+    <defName>RimRunnerDummy_Combat</defName>
+    <thinkRoot Class="RimRunner.RimRunnerDummyThinkNode_Priority">
+      <subNodes>
+        <li Class="RimRunner.RimRunnerDummyJobGiver_FightEnemies" />
+        <li Class="RimRunner.RimRunnerDummyJobGiver_Wait">
+          <expiryTicks>60</expiryTicks>
+        </li>
+      </subNodes>
+    </thinkRoot>
+    <modExtensions>
+      <li Class="RimRunner.RimRunnerDummyThinkTreeExtension">
+        <moves>true</moves>
+        <attacks>true</attacks>
+        <initiates>true</initiates>
+      </li>
+    </modExtensions>
+  </ThinkTreeDef>
+
+</Defs>

@@ -13,6 +13,7 @@ RimWorld mod 的游戏内自动回归：用 C# 写用例，`rimrunner` 起游戏
 | `template/` | 最小产品样板：编排描述符、名单、测试工程、产品描述符、一条用例 |
 | `examples/` | 范例用例：只依赖引擎与 vanilla，随 RimRunner 构建编译过 |
 | `tools/FixtureIndex/` | 作者面名册工具：扫一个目录的 C# 源码，按 `///` 摘要列出类型与成员。产品要给自己的夹具建名册时调它，`RimRunnerFixtureIndex <目录> --profile product` |
+| `THIRD-PARTY-NOTICES.txt` | 第三方组件的许可 |
 | `package.json` | 构建清单：commit、构建时间、所含部分、构建时的游戏版本与程序集指纹 |
 
 ## 安装

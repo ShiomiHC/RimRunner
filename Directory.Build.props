@@ -1,0 +1,7 @@
+<Project>
+    <PropertyGroup>
+    </PropertyGroup>
+    <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+        <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
+    </PropertyGroup>
+</Project>

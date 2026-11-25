@@ -27,7 +27,7 @@ internal sealed class OrchestratorHost
     private readonly string? ownTree = TreeHosts.OwnDevTree();
     private readonly CoordinatorLink link = new();
 
-    private OrchestratorHost() => pipeName = OrchestratorPipe.Name(build);
+    private OrchestratorHost() => pipeName = OrchestratorPipe.Name();
 
     internal static int Launch()
     {

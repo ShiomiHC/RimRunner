@@ -1982,7 +1982,7 @@ public static class Program
 
     private static void PrintVersion()
     {
-        Console.WriteLine($"rimrunner {typeof(Program).Assembly.GetName().Version}");
+        Console.WriteLine($"rimrunner {typeof(Program).Assembly.GetName().Version?.ToString(3)}");
 
         string? exe = Environment.ProcessPath;
         if (exe == null)

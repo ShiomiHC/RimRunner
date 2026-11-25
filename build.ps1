@@ -1,7 +1,8 @@
 #requires -Version 7
 # 编引擎与 CLI，落成安装目录 dist/
+# -Release：另打 release/rimrunner-<标签>.zip。要求工作树干净、HEAD 上有标签 v<CLI 版本号>
 
-param([string]$Configuration = 'Release')
+param([string]$Configuration = 'Release', [switch]$Release)
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
@@ -42,6 +43,16 @@ function Move-Locked([string]$dir) {
 function Copy-IfChanged([string]$from, [string]$to) {
     if ((Test-Path $to) -and ((Get-FileHash $from).Hash -eq (Get-FileHash $to).Hash)) { return }
     Copy-Item $from $to -Force
+}
+
+if ($Release) {
+    $dirty = git -C $root status --porcelain
+    Assert-Success '读取工作树状态'
+    if ($dirty) { throw '-Release 要求工作树干净' }
+    $version = (dotnet msbuild $cliProj -getProperty:Version | ForEach-Object Trim)
+    Assert-Success '读取 CLI 版本号'
+    $tag = "v$version"
+    if ($tag -notin @(git -C $root tag --points-at HEAD)) { throw "HEAD 上没有标签 $tag" }
 }
 
 if (-not (Test-Path (Join-Path $root 'RimTooling\Sources'))) { throw '子模块 RimTooling 未取出，先执行 git submodule update --init' }
@@ -152,10 +163,10 @@ Copy-Item (Join-Path $staging 'authoring.json'), (Join-Path $staging 'checks.jso
 Copy-Tree (Join-Path $engineDir 'Content') (Join-Path $distEngine 'Content') @('/MIR')
 Copy-Tree $stagedSource (Join-Path $distEngine 'src') @('/MIR')
 Copy-IfChanged (Join-Path $staging 'RimRunner.targets') (Join-Path $dist 'RimRunner.targets')
-Copy-Item (Join-Path $staging 'README.md') $dist -Force
+Copy-Item (Join-Path $staging 'README.md'), (Join-Path $staging 'THIRD-PARTY-NOTICES.txt'), (Join-Path $root 'LICENSE') $dist -Force
 foreach ($name in 'template', 'examples', 'skills') { Copy-Tree (Join-Path $staging $name) (Join-Path $dist $name) @('/MIR') }
 
-$describe = git -C $root describe --always --dirty 2>$null
+$describe = git -C $root describe --tags --always --dirty 2>$null
 if ($LASTEXITCODE -ne 0) { $describe = 'unknown' }
 $json = [ordered]@{
     commit = "$describe"; built = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; edition = 'release'
@@ -164,4 +175,14 @@ $json = [ordered]@{
 } | ConvertTo-Json -Depth 4
 [IO.File]::WriteAllText($manifest, ($json -replace "`r`n", "`n") + "`n", $utf8)
 Write-Host "[dist] $dist  $describe"
+if (-not $Release) { exit 0 }
+
+$releaseDir = Join-Path $root 'release'
+$releaseStaging = Join-Path $root 'obj\release-staging'
+if (Test-Path $releaseStaging) { Remove-Item $releaseStaging -Recurse -Force }
+Copy-Tree $dist $releaseStaging @('/E', '/XF', '*.old-*')
+New-Item -ItemType Directory -Force $releaseDir | Out-Null
+$zip = Join-Path $releaseDir "rimrunner-$tag.zip"
+Compress-Archive -Path (Join-Path $releaseStaging '*') -DestinationPath $zip -Force
+Write-Host "[release] $zip  SHA256 $((Get-FileHash $zip).Hash)"
 exit 0

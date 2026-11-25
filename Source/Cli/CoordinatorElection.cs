@@ -21,7 +21,7 @@ internal static class CoordinatorElection
             {
             }
 
-            return new Candidate(OrchestratorPipe.Name(OrchestratorPipe.Build), OrchestratorPipe.Build,
+            return new Candidate(OrchestratorPipe.Name(), OrchestratorPipe.Build,
                 AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), manifest?.DevTree, manifest?.BuiltAt);
         }
 
@@ -62,7 +62,8 @@ internal static class CoordinatorElection
 
     internal static bool ShouldYield(Candidate incumbent, bool taken, Candidate newcomer, bool take)
     {
-        if (string.Equals(incumbent.Build, newcomer.Build, StringComparison.OrdinalIgnoreCase)) return false;
+        if (string.Equals(incumbent.Build, newcomer.Build, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(incumbent.PackageRoot, newcomer.PackageRoot, StringComparison.OrdinalIgnoreCase)) return false;
         if (take && newcomer.Dev) return true;
         if (taken) return false;
         return Outranks(newcomer, incumbent);

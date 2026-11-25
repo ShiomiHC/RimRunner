@@ -10,11 +10,11 @@ internal static class OrchestratorClient
     private static readonly TimeSpan FirstConnect = TimeSpan.FromMilliseconds(300);
     private static readonly TimeSpan LaunchWindow = TimeSpan.FromSeconds(30);
 
-    internal static int Forward(string[] args) => Send(Connect(OrchestratorPipe.Name(OrchestratorPipe.Build)), args);
+    internal static int Forward(string[] args) => Send(Connect(OrchestratorPipe.Name()), args);
 
     internal static int? ForwardIfRunning(string[] args)
     {
-        NamedPipeClientStream stream = OrchestratorPipe.CreateClient(OrchestratorPipe.Name(OrchestratorPipe.Build));
+        NamedPipeClientStream stream = OrchestratorPipe.CreateClient(OrchestratorPipe.Name());
         try
         {
             stream.Connect(FirstConnect);

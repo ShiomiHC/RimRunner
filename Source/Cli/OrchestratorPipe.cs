@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace RimRunnerCli;
@@ -22,7 +23,14 @@ internal static class OrchestratorPipe
         }
     }
 
-    internal static string Name(string build) => $"rimrunner-{User}-{build}";
+    internal static string Name() => Name(Build, AppContext.BaseDirectory);
+
+    internal static string Name(string build, string packageRoot)
+    {
+        string root = Path.TrimEndingDirectorySeparator(CommandContext.FullPath(packageRoot)).ToUpperInvariant();
+        byte[] key = SHA256.HashData(Encoding.UTF8.GetBytes(build + "|" + root));
+        return $"rimrunner-{User}-{Convert.ToHexStringLower(key.AsSpan(0, 16))}";
+    }
 
     internal static string? MvidOnDisk(string dllPath) =>
         RimTooling.IO.PeImage.TryReadIdentity(CommandContext.FullPath(dllPath), out RimTooling.IO.PeIdentity identity)

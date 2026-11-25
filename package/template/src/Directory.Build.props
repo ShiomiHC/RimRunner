@@ -12,8 +12,14 @@
         <!-- mod 的 Assemblies 目录里只放程序集 -->
         <GenerateDependencyFile>false</GenerateDependencyFile>
 
-        <!-- 游戏根与 Harmony 程序集位置：改成本机路径，或用环境变量 / -p:RimWorldDir=… 覆盖 -->
-        <RimWorldDir Condition=" '$(RimWorldDir)' == '' ">C:\Program Files (x86)\Steam\steamapps\common\RimWorld</RimWorldDir>
-        <HarmonyAssembliesDir Condition=" '$(HarmonyAssembliesDir)' == '' ">C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077\1.7\Assemblies</HarmonyAssembliesDir>
+        <!-- 游戏目录由环境变量 RimWorldDir 或 -p:RimWorldDir=… 给出，这里不写机器路径。
+             Harmony 按 Steam 的目录布局从它推出，布局不同时用环境变量 HarmonyAssembliesDir 给出 -->
+        <HarmonyAssembliesDir Condition=" '$(HarmonyAssembliesDir)' == '' and '$(RimWorldDir)' != '' ">$([System.IO.Path]::GetFullPath('$(RimWorldDir)\..\..\workshop\content\294100\2009463077\1.7\Assemblies'))</HarmonyAssembliesDir>
     </PropertyGroup>
+
+    <!-- 缺游戏目录时编译器只报一屏找不到命名空间，换成一句指名的失败 -->
+    <Target Name="VerifyRimWorldDir" BeforeTargets="BeforeBuild">
+        <Error Condition=" !Exists('$(RimWorldDir)\Assembly-CSharp.dll') "
+               Text="找不到游戏程序集（RimWorldDir = '$(RimWorldDir)'）。把环境变量 RimWorldDir 设为 RimWorld.exe 所在的目录"/>
+    </Target>
 </Project>

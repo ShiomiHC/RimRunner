@@ -10,7 +10,7 @@
    描述符里 `[[units]]` 的 `source` 改指自己的 mod 目录（packageId 读自它的 `About/About.xml`）
 2. 在机器级的 `config.toml` 写 `gameExe = "<RimWorld.exe 的绝对路径>"`（`rimrunner machine` 输出这份文件的路径）。游戏位置随机器而定，产品根里不写 `gameExe`
 3. 改编排描述符（下节）。`rimrunner status` 能输出「产品：…」即解析通过，无法解析时返回退出码 4
-4. 改 `src/Directory.Build.props` 里两个程序集目录为本机路径，或用同名环境变量覆盖
+4. 设环境变量 `RimWorldDir` 为 RimWorld.exe 所在的目录，编译从这里取游戏程序集。Harmony 按 Steam 的目录布局从它推出，布局不同时另设 `HarmonyAssembliesDir` 为 `0Harmony.dll` 所在的目录
 5. 改测试工程里的产品描述符（`ExampleModDescriptor.cs`）：探针换成自己 mod 的入口类
 6. 写名单 `RimRunner/modlists/<名单名>.toml`（格式见 `modlists.md`），描述符 `defaultModList` 写它的名字
 7. 建基线档（下「建档」节）：名单还没有台账时，`run` 见档不存在时先执行一轮 `build-save`，建档这一步可与第 8 步合并

@@ -8,7 +8,7 @@ RimWorld mod 的游戏内自动回归：用 C# 写用例，`rimrunner` 起游戏
 
 需要 Windows、Steam 版 RimWorld 1.7、创意工坊的 Harmony、.NET SDK 10 与 PowerShell 7。
 
-[RimTooling](https://github.com/ShiomiHC/RimTooling) 是 git 子模块。环境变量 `RimWorldDir` 指向游戏目录后：
+[RimTooling](https://github.com/ShiomiHC/RimTooling) 是 git 子模块。游戏目录按 Steam 安装信息找，不在 Steam 库里的设环境变量 `RimWorldDir`。
 
 ```powershell
 git clone --recursive https://github.com/ShiomiHC/RimRunner.git

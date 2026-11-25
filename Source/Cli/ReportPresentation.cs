@@ -449,10 +449,10 @@ public static class ReportPresentation
         ];
         if (!string.IsNullOrEmpty(assert.Source))
             children.Add(new ScreenNode("source", SubjectStyle.Fact, null, "source: " + FirstLineWithPointer(assert.Source, "asserts"), ScreenNode.None)
-                { Trailing = true, MarkAt = "source".Length });
+                { Trailing = true, MarkAt = "source".Length, Name = "source" });
         if (!string.IsNullOrEmpty(assert.Explanation))
             children.Add(new ScreenNode("explanation", SubjectStyle.Fact, null, FirstLineWithPointer(assert.Explanation, "asserts"), ScreenNode.None)
-                { Trailing = true });
+                { Trailing = true, Name = "说明" });
         string? handle = FindingPresentation.AssertHandle(assert.Ordinal);
         return new ScreenNode("verdict", SubjectStyle.Label, FindingPresentation.FirstLinesWithPointer("asserts", assert.Label),
             (handle == null ? "" : handle + " ") + FindingPresentation.FirstLinesWithPointer("asserts", AssertParts(assert)), children)

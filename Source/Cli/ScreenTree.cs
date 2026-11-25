@@ -26,6 +26,8 @@ internal sealed record ScreenNode(string Kind, SubjectStyle Style, string? Subje
 
     public int MarkAt { get; init; }
 
+    public string? Name { get; init; }
+
     public string? Full { get; init; }
 
     public string? LogPrefix { get; init; }
@@ -77,7 +79,7 @@ internal static class ScreenTree
                 MemberChildren = group.Children,
             })
         ];
-        return HoistTrailing(ShareRows(merged));
+        return ShareAttributes(HoistTrailing(ShareRows(merged)));
     }
 
     private static string Identity(ScreenNode node) =>
@@ -151,6 +153,57 @@ internal static class ScreenTree
                 return new MergedNode(node, [node], [], [], 0);
             });
             result.Add(sibling with { Children = [.. kept, .. pointers, .. sibling.Children.Skip(trailing)] });
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<MergedNode> ShareAttributes(IReadOnlyList<MergedNode> siblings)
+    {
+        if (!siblings.Any(sibling => sibling.Node.Style == SubjectStyle.Case)) return siblings;
+        var shown = new Dictionary<string, string>(StringComparer.Ordinal);
+        var result = new List<MergedNode>(siblings.Count);
+        foreach (MergedNode sibling in siblings)
+        {
+            string? owner = sibling.Node.Style == SubjectStyle.Case ? sibling.Subjects.FirstOrDefault() : null;
+            if (owner == null)
+            {
+                result.Add(sibling);
+                continue;
+            }
+
+            var firsts = new List<(string Key, string Owner)>();
+            var children = new List<MergedNode>(sibling.Children.Count);
+            foreach (MergedNode child in sibling.Children)
+            {
+                int start = TrailingStart(child);
+                MergedNode[] run = [.. child.Children.Skip(start)];
+                if (run.Length == 0 || !run.Any(row => row.Node.Text.Trim().Length >= CliLog.RepeatMinChars))
+                {
+                    children.Add(child);
+                    continue;
+                }
+
+                string key = Canonical([.. run.Select(row => row with { SharedTrailing = 0 })]);
+                if (!shown.TryGetValue(key, out string? target))
+                {
+                    firsts.Add((key, owner));
+                    children.Add(child);
+                    continue;
+                }
+
+                string names = string.Join("、", run.Select(row => row.Node.Name ?? row.Node.Kind).Distinct(StringComparer.Ordinal));
+                string mark = run[0].SharedTrailing > 0 ? $"（以上 {run[0].SharedTrailing} 条同）" : "";
+                var pointer = new ScreenNode("attribute-pointer", SubjectStyle.Fact, null, $"{names}{mark}: 同用例 {target}", ScreenNode.None)
+                {
+                    LogAlways = [.. sibling.Subjects.SelectMany(id => run.Select(row => $"[用例] {id}：{row.Node.Text}"))],
+                };
+                children.Add(child with { Children = [.. child.Children.Take(start), new MergedNode(pointer, [pointer], [], [], 0)] });
+            }
+
+            foreach ((string key, string first) in firsts)
+                shown.TryAdd(key, first);
+            result.Add(sibling with { Children = children });
         }
 
         return result;

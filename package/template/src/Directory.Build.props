@@ -12,14 +12,18 @@
         <!-- mod 的 Assemblies 目录里只放程序集 -->
         <GenerateDependencyFile>false</GenerateDependencyFile>
 
-        <!-- 游戏目录由环境变量 RimWorldDir 或 -p:RimWorldDir=… 给出，这里不写机器路径。
-             Harmony 按 Steam 的目录布局从它推出，布局不同时用环境变量 HarmonyAssembliesDir 给出 -->
+        <!-- 游戏目录取环境变量 RimWorldDir 或 -p:RimWorldDir=…，没有时按 Steam 安装信息找。
+             Harmony 按 Steam 的目录布局从游戏目录推出，布局不同时用环境变量 HarmonyAssembliesDir 给出 -->
+        <_SteamDir Condition=" '$(RimWorldDir)' == '' ">$([MSBuild]::GetRegistryValueFromView('HKEY_CURRENT_USER\Software\Valve\Steam', 'SteamPath', null, RegistryView.Default))</_SteamDir>
+        <_SteamLibraries Condition=" '$(_SteamDir)' != '' and Exists('$(_SteamDir)\steamapps\libraryfolders.vdf') ">$([System.IO.File]::ReadAllText('$(_SteamDir)\steamapps\libraryfolders.vdf'))</_SteamLibraries>
+        <_SteamLibrary Condition=" '$(_SteamLibraries)' != '' ">$([System.Text.RegularExpressions.Regex]::Match($(_SteamLibraries), '"path"\s+"([^"]+)"(?:(?!"path")[\s\S])*?"294100"').Groups[1].Value.Replace('\\', '\'))</_SteamLibrary>
+        <RimWorldDir Condition=" '$(RimWorldDir)' == '' and '$(_SteamLibrary)' != '' ">$(_SteamLibrary)\steamapps\common\RimWorld</RimWorldDir>
         <HarmonyAssembliesDir Condition=" '$(HarmonyAssembliesDir)' == '' and '$(RimWorldDir)' != '' ">$([System.IO.Path]::GetFullPath('$(RimWorldDir)\..\..\workshop\content\294100\2009463077\1.7\Assemblies'))</HarmonyAssembliesDir>
     </PropertyGroup>
 
     <!-- 缺游戏目录时编译器只报一屏找不到命名空间，换成一句指名的失败 -->
     <Target Name="VerifyRimWorldDir" BeforeTargets="BeforeBuild">
         <Error Condition=" !Exists('$(RimWorldDir)\Assembly-CSharp.dll') "
-               Text="找不到游戏程序集（RimWorldDir = '$(RimWorldDir)'）。把环境变量 RimWorldDir 设为 RimWorld.exe 所在的目录"/>
+               Text="找不到游戏程序集（RimWorldDir = '$(RimWorldDir)'）"/>
     </Target>
 </Project>

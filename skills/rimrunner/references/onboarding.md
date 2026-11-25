@@ -8,9 +8,9 @@
 1. 把 `template/` 的内容复制进产品根。样板里 `ExampleMod`、`yourname.examplemod` 是占位名，全部替换为自己的名称；
    已有 mod 工程的，删掉 `src/ExampleMod/`，测试工程的 `ProjectReference` 与描述符的 `[[builds]]` 改指自己的工程；
    描述符里 `[[units]]` 的 `source` 改指自己的 mod 目录（packageId 读自它的 `About/About.xml`）
-2. 在机器级的 `config.toml` 写 `gameExe = "<RimWorld.exe 的绝对路径>"`（`rimrunner machine` 输出这份文件的路径）。游戏位置随机器而定，产品根里不写 `gameExe`
+2. `rimrunner machine` 输出 `gameExe` 的生效值：机器级的 `config.toml` 没写时按 Steam 安装信息找。没找到或不是要用的那份，在 `config.toml` 写 `gameExe = "<RimWorld.exe 的绝对路径>"`（文件路径同在 `rimrunner machine` 的输出里）。游戏位置随机器而定，产品根里不写 `gameExe`
 3. 改编排描述符（下节）。`rimrunner status` 能输出「产品：…」即解析通过，无法解析时返回退出码 4
-4. 设环境变量 `RimWorldDir` 为 RimWorld.exe 所在的目录，编译从这里取游戏程序集。Harmony 按 Steam 的目录布局从它推出，布局不同时另设 `HarmonyAssembliesDir` 为 `0Harmony.dll` 所在的目录
+4. 编译取游戏程序集的位置由 `src/Directory.Build.props` 按 Steam 安装信息找。游戏不在 Steam 库里的，设环境变量 `RimWorldDir` 为游戏目录；Harmony 不在同一个库的创意工坊目录里的，另设 `HarmonyAssembliesDir` 为 `0Harmony.dll` 所在的目录
 5. 改测试工程里的产品描述符（`ExampleModDescriptor.cs`）：探针换成自己 mod 的入口类
 6. 写名单 `RimRunner/modlists/<名单名>.toml`（格式见 `modlists.md`），描述符 `defaultModList` 写它的名字
 7. 建基线档（下「建档」节）：名单还没有台账时，`run` 见档不存在时先执行一轮 `build-save`，建档这一步可与第 8 步合并
@@ -39,7 +39,7 @@
 非可选单元自动算必需；`requiredMods` 只写单元以外每轮须装的 mod（Harmony、DLC、前置框架）。
 `[[builds]]` 按编译顺序列产品与兼容程序集，被引用的在前，测试工程不写在这里，由 `[testMod]` 接在最后；`dll` 的文件名须与工程的 `AssemblyName` 一致，未指定 `csproj` 即预编译产物，只核新鲜度、不编译。
 
-游戏位置、实例空闲时限、拍摄目录的保留配额与整机资源随机器而定，写在机器级的 `config.toml`，产品根里写这些键即拒绝；`rimrunner machine` 输出这份文件的路径与各键生效值，文件不存在即全取缺省（唯 `gameExe` 必写）。
+游戏位置、实例空闲时限、拍摄目录的保留配额与整机资源随机器而定，写在机器级的 `config.toml`，产品根里写这些键即拒绝；`rimrunner machine` 输出这份文件的路径与各键生效值，文件不存在即全取缺省。
 `[instances]` 表：`batchIdleMinutes`、`shardIdleMinutes`、`filmIdleMinutes`、`showcaseIdleMinutes` 是自动实例、分片实例、拍摄实例、展台实例四类空闲多少分钟后自行退出（0 = 不自动停止，缺省见 `rimrunner run --help`），
 `liveGraceMinutes` 是展台实例与拍摄实例以外的实例上驱动命令执行完后再保留的分钟数；`liveWaitMinutes`、`liveAfterWait`、`liveLimitMinutes` 依次是驱动命令的前台等待、等满之后转后台（`background`）还是取消（`cancel`）、从开始执行起的总上限（缺省都见 `rimrunner live do --help`）。转后台时终端输出 `[后台操作] 操作 <id> …`，之后用 `rimrunner live status <id>` 查、`rimrunner live cancel <id>` 取消；在别的树里执行这些操作时带原命令所用的 `--tree` 取值。
 `[film]` 表：`keepRecent`、`keepTagged`、`keepFramesRuns` 是每个场面保留的拍摄目录份数（见 `rimrunner film --help`）。
@@ -47,7 +47,7 @@
 
 | 键 | 管什么 | 缺省 |
 |---|---|---|
-| `gameExe` | RimWorld.exe 的绝对路径 | 无，必写 |
+| `gameExe` | RimWorld.exe 的绝对路径 | 按 Steam 安装信息找，找不到即拒绝 |
 | `ffmpegPath` | 拍摄用的 ffmpeg 的绝对路径 | 未指定即在 PATH 上查找 |
 | `busyCap` | 同时执行的实例上限：执行批次、建档、分片组的每一片、展台加载各算一个，满即排队（行首「同时执行的实例已满」）。0 = 不限 | 0（不限）：日常并行度由 `busyReserve` 与实测 P 核空闲决定 |
 | `busyReserve` | 入场后要留给编译、桌面与系统的 P 核数；0 = 不做 CPU 准入。无法读取 P 核余量且 `busyCap` 未配正数时拒绝执行 | 1 |

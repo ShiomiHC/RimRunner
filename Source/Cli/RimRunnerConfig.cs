@@ -113,7 +113,7 @@ public static class RimRunnerConfig
 
         public IReadOnlyList<string> Effective() =>
         [
-            $"{GameExeKey} {PathShown(GameExe)}",
+            $"{GameExeKey} {GameExeShown()}",
             $"{FfmpegPathKey} {(IsUnset(FfmpegPath) ? "（未配置，在 PATH 上找）" : FfmpegPath.Value + Source(true))}",
             $"{BusyCapKey} {BusyCap.Value}{Source(BusyCap.FromFile)}",
             $"{BusyReserveKey} {Shown(BusyReserve.Value)}{Source(BusyReserve.FromFile)}",
@@ -136,8 +136,12 @@ public static class RimRunnerConfig
 
         private static bool IsUnset(Setting<string> setting) => string.IsNullOrEmpty(setting.Value);
 
-        private static string PathShown(Setting<string> setting) =>
-            IsUnset(setting) ? "（未配置）" : setting.Value + Source(true);
+        public string? ResolvedGameExe => IsUnset(GameExe) ? SteamGame.FindExe() : GameExe.Value;
+
+        private string GameExeShown() =>
+            !IsUnset(GameExe) ? GameExe.Value + Source(true)
+            : ResolvedGameExe is string found ? $"{found}（{SteamGame.Source}）"
+            : $"（未配置，{SteamGame.Source}里没有）";
 
         private static string Source(bool fromFile) => fromFile ? $"（{MachineFileName}）" : "（缺省）";
     }

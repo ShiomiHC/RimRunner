@@ -17,6 +17,6 @@
     <!-- 安装目录缺席时 Import 不报错、编译器只报一屏「找不到 RimRunner 命名空间」，换成一句指名的失败 -->
     <Target Name="VerifyRimRunnerHome" BeforeTargets="BeforeBuild">
         <Error Condition=" !Exists('$(RimRunnerHome)\RimRunner.targets') "
-               Text="找不到 RimRunner 安装目录（RimRunnerHome = '$(RimRunnerHome)'）。把环境变量 RimRunnerHome 设为 rimrunner.exe 所在的目录"/>
+               Text="找不到 RimRunner 安装目录（RimRunnerHome = '$(RimRunnerHome)'）"/>
     </Target>
 </Project>

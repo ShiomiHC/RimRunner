@@ -162,11 +162,11 @@ public sealed class OrchestratorDescriptor
         descriptor.ComposePreflight(preflightPath, preflight);
         descriptor.ComposeExcluded(excludedPath, excluded);
 
-        string? gameExe = GameExeOverride?.Invoke(productRoot) ?? machine.GameExe.Value;
+        string? gameExe = GameExeOverride?.Invoke(productRoot) ?? machine.ResolvedGameExe;
         if (string.IsNullOrWhiteSpace(gameExe))
         {
             throw new DescriptorException(
-                $"没有配置 RimWorld.exe 的位置：在机器级 {RimRunnerConfig.MachineFileName} 写 {RimRunnerConfig.GameExeKey} = \"<绝对路径>\"；文件 {RimRunnerConfig.MachinePath}");
+                $"找不到 RimWorld.exe：机器级 {RimRunnerConfig.MachineFileName} 没有 {RimRunnerConfig.GameExeKey}，{SteamGame.Source}里也没有 RimWorld；文件 {RimRunnerConfig.MachinePath}");
         }
 
         descriptor.GameExe = gameExe;

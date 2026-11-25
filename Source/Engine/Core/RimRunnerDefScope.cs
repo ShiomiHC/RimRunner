@@ -4,7 +4,7 @@ using System.Threading;
 namespace RimRunner;
 
 /// <summary>本产品侧归属：判 def、类型、pack 是否为本产品侧，并给出各扫描面。</summary>
-/// <remarks>本产品侧 pack 是产品描述符探针类型所在的 pack，加上装着引擎与测试程序集的 pack；本产品侧程序集即这些 pack 装载的全部程序集。</remarks>
+/// <remarks>本产品侧 pack 是产品描述符探针类型所在的 pack，加上含引擎与测试程序集的 pack；本产品侧程序集即这些 pack 装载的全部程序集。</remarks>
 public static class RimRunnerDefScope
 {
     internal sealed class Derivation(

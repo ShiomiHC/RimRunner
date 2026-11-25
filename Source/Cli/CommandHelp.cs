@@ -17,11 +17,11 @@ public static class CommandHelp
 
     private static readonly OptionDoc TreeInstanceDoc = OptionDoc.Value("<名>[/<用途>]",
         "在那棵树里执行、不看 cwd，带用途（batch、showcase、film、shardN）时只对该实例；",
-        "<名> 是清单里的树名，认出多棵时列出候选；也收路径。缺省按 cwd 向上找产品根");
+        "<名> 是清单里的树名，匹配到多棵时列出候选；也收路径。缺省按 cwd 向上找产品根");
 
     private static readonly OptionDoc TreeOnlyDoc = OptionDoc.Value("<名>",
         "在那棵树里执行、不看 cwd，作用于整棵树，不收用途段；",
-        "<名> 是清单里的树名，认出多棵时列出候选；也收路径。缺省按 cwd 向上找产品根");
+        "<名> 是清单里的树名，匹配到多棵时列出候选；也收路径。缺省按 cwd 向上找产品根");
 
     private static readonly OptionDoc ProductDoc = OptionDoc.Value("<产品名>",
         "与 --tree 同时传入时只在该产品的树里认树名；不带 --tree 时核 cwd 所在的产品，不匹配即拒");
@@ -83,7 +83,7 @@ public static class CommandHelp
                 "  空闲满时限的一半（可停止时限）时，排队等内存准入的其他命令会停止该实例；",
                 "  时限在冷启动时定，改配置文件只对之后冷启动的实例生效；run 与 live 查询（live progress 除外）重新计时，",
                 "  窗口里的键鼠操作也重新计时；status 不计；live 保留期内不计时，保留到期或放开后重新计时（见 rimrunner live do --help）",
-                "  本树的常驻自动实例被 live 保留着时 run 不接手该实例、改用临时自动实例，--force 停止该实例再冷启动；受过 live 驱动的实例不复用（见 rimrunner live do --help）",
+                "  本树的常驻自动实例被 live 保留期间 run 不接手该实例、改用临时自动实例，--force 停止该实例再冷启动；受过 live 驱动的实例不复用（见 rimrunner live do --help）",
                 "  贴图档位由名单 [rimrunner]." + TextureTierPolicy.DirectiveKey + " = \"<档>\" 定："
                     + string.Join(" / ", TextureTierPolicy.Ladder),
                 "                                  （清晰度升序），名单未写档位 = " + TextureTierPolicy.DefaultTier
@@ -138,7 +138,7 @@ public static class CommandHelp
                 (Switches.Group, OptionDoc.Value("<组>[,<组>…]",
                     "批部分只选带所列任一组的产品用例，覆盖名单 [rimrunner]." + CaseGroupPolicy.DirectiveKey + "；"
                     + RimRunnerCaseGroups.AllToken + " = 不按组过滤，也不套用名单的组；",
-                    "不能与用例 Id、--env-checks 同时传入；组名须有产品用例带着，否则拒")),
+                    "不能与用例 Id、--env-checks 同时传入；组名须有产品用例声明，否则拒绝")),
                 (Switches.NoCompat, OptionDoc.Flag(
                     "关闭游戏 runtimeconfig 里的全部 WaylithClr.* 兼容开关执行一批：",
                     "游戏从游戏目录旁的镜像目录冷启动，",
@@ -1003,7 +1003,7 @@ public static class CommandHelp
     [
         "  --tree <名>[/<用途>]            在那棵树里执行、不看 cwd，带用途（batch、showcase、film、shardN）时只对该实例；",
         "  --tree <名>                     在那棵树里执行、不看 cwd，作用于整棵树，不收用途段；",
-        "                                  <名> 是清单里的树名，认出多棵时列出候选；也收路径。缺省按 cwd 向上找产品根",
+        "                                  <名> 是清单里的树名，匹配到多棵时列出候选；也收路径。缺省按 cwd 向上找产品根",
         "  " + ProductLineContent,
         "                                  " + string.Join("、", refusingTree) + " 不接受 --tree 与 --product",
         "  --version                       输出版本后退出",

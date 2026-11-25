@@ -58,7 +58,7 @@ public class Case_DefScopeDerivation : RimRunnerRegression
         string[] missingContent = new[] { "RimRunnerDummy_Races.xml", "RimRunnerDummy_Kinds.xml" }
             .Where(file => !cached.EngineContentFileNames.Contains(file)).ToArray();
         ctx.AssertTrue("SCOPE1-EngineContentFilesNonEmpty", missingContent.Length == 0,
-            "[engine] 装着引擎程序集的 pack 根下 Defs/RimRunner/ 读到 " + cached.EngineContentFileNames.Count
+            "[engine] 含引擎程序集的 pack 根下 Defs/RimRunner/ 读到 " + cached.EngineContentFileNames.Count
             + " 个文件名，缺 " + string.Join("、", missingContent) + "：缺失文件里的引擎假人进入 def 扫描面",
             RimRunnerExpectationSource.Literal(Source));
 

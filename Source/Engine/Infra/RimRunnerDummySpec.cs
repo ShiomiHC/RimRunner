@@ -42,7 +42,7 @@ public sealed record RimRunnerDummySpec : RimRunnerTargetSpecBase
     public required ThinkTreeDef? ConstantThinkTree { get; init; }
 
     /// <summary>落图先站定、首次被打断后交回实例的树；只配会走动的树。</summary>
-    /// <remarks>站着的是原版 Wait，贴身自动近战照常。</remarks>
+    /// <remarks>站立用原版 Wait，贴身自动近战照常。</remarks>
     public required bool StandFirst { get; init; }
 
     /// <summary>stat 底值表（WithStat）。</summary>

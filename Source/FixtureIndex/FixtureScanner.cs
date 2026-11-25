@@ -227,7 +227,7 @@ internal static class FixtureScanner
                 Doc summary = docs.Count > 0 ? DocOf(docs, $"{file} 类型 {name}") : Doc.Empty;
                 if (access != Access.Public)
                 {
-                    problems.Add($"{file} 类型 {name}：作者面类型须为 public（引擎外够不着 internal）；不是作者面就删摘要");
+                    problems.Add($"{file} 类型 {name}：作者面类型须为 public（引擎外无法访问 internal）；不是作者面就删摘要");
                     return;
                 }
                 AddUnit(type, name, summary);
@@ -305,7 +305,7 @@ internal static class FixtureScanner
                 if (docs.Count > 0)
                 {
                     Claim(docs);
-                    problems.Add($"{file} 类型 {name}：作者面类型须为 public（引擎外够不着 internal）；不是作者面就删摘要");
+                    problems.Add($"{file} 类型 {name}：作者面类型须为 public（引擎外无法访问 internal）；不是作者面就删摘要");
                 }
                 return;
             }

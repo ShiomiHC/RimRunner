@@ -6,7 +6,7 @@ namespace RimRunner;
 public class Case_OldAgeInjurySkip : RimRunnerRegression
 {
     private const string Source =
-        "引擎承诺：经引擎生成的 pawn 不带生成期的老年病与旧伤；不成立时 pawn 带着背病、白内障、旧伤，"
+        "引擎承诺：经引擎生成的 pawn 不带生成期的老年病与旧伤；不成立时 pawn 带有背病、白内障、旧伤，"
         + "动作慢、做事半途而废，未通过的位置落在离根因很远的被测机制上";
 
     private const int SeedTries = 20;

@@ -8,7 +8,7 @@ public static class RimRunnerAmbientControl
         "RimRunnerAmbientControl.Fix");
 
     /// <summary>作用域内钉住 pawn 的环境温度。</summary>
-    /// <remarks>Dispose 还原为本作用域开之前那一层，之前没钉即解除钉住。Remove 之后 Dispose 保持 Remove 后的状态。用例末（多阶段为 phase 末）仍钉着、不随交棒走的由引擎撤下并记 FIXTURE-RESIDUE。</remarks>
+    /// <remarks>Dispose 还原为本作用域开之前那一层，之前没钉即解除钉住。Remove 之后 Dispose 保持 Remove 后的状态。用例末（多阶段为 phase 末）仍处于钉住、不随交棒走的由引擎撤下并记 FIXTURE-RESIDUE。</remarks>
     /// <exception cref="ArgumentOutOfRangeException">celsius 非有限或不在 -273.15 到 1000 之间时抛。</exception>
     public static IDisposable Fix(Pawn pawn, float celsius)
     {

@@ -407,7 +407,7 @@ internal static class RimRunnerPackageAbsenceGate
 
         PerOwner(result.Unlabeled, (owner, hits) => Subjects(owner)
             .Select(subject => RimRunnerFinding.Warning(subject, RimRunnerWarningKey.AbsentableUnlabeled,
-                "用例 " + subject + " 够得着的方法引用只由可缺席包提供的程序集而未声明依赖、未隔离，缺这个程序集的名单下被调用即 JIT 失败：\n  "
+                "用例 " + subject + " 可达的方法引用只由可缺席包提供的程序集而未声明依赖、未隔离，缺这个程序集的名单下被调用即 JIT 失败：\n  "
                 + string.Join("\n  ", hits.Select(UnlabeledLine))))
             .ToArray());
         List<Hit> orphanUnlabeled = result.Unlabeled.Where(hit => !hit.CaseReached && !hit.ShowcaseReached).ToList();
@@ -420,7 +420,7 @@ internal static class RimRunnerPackageAbsenceGate
 
         PerOwner(result.SelfGuarded, (owner, hits) => Subjects(owner)
             .Select(subject => RimRunnerFinding.Warning(subject, RimRunnerWarningKey.PresenceInIsolated,
-                "用例 " + subject + " 够得着的隔离方法在方法体内判包在场：" + string.Join("、", hits.Select(SelfGuardedLine))
+                "用例 " + subject + " 可达的隔离方法在方法体内判包在场：" + string.Join("、", hits.Select(SelfGuardedLine))
                 + "。该方法 JIT 时即解析包里的类型，早于体内判定"))
             .ToArray());
         foreach (Hit hit in result.SelfGuarded.Where(hit => !hit.CaseReached && !hit.ShowcaseReached))
@@ -431,7 +431,7 @@ internal static class RimRunnerPackageAbsenceGate
 
         PerOwner(result.ModsConfigActive, (owner, hits) => Subjects(owner)
             .Select(subject => RimRunnerFinding.Warning(subject, RimRunnerWarningKey.ModsConfigActive,
-                "用例 " + subject + " 够得着的方法调 " + string.Join("、", hits.Select(ModsConfigLine))
+                "用例 " + subject + " 可达的方法调 " + string.Join("、", hits.Select(ModsConfigLine))
                 + "。" + ModsConfigNote))
             .ToArray());
         return findings;

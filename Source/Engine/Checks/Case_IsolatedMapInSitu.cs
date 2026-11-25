@@ -4,12 +4,12 @@ using RimWorld.Planet;
 namespace RimRunner;
 
 /// <summary>缺省独立小图的现场：主图冻结、交付粒度、当前地图探针与家园挑图。</summary>
-/// <remarks>只验缺省上独立小图的 World 级现场：主图零推进、小图按 15 tick 一批，冻结图落物探针记一行，当前地图探针记读点、另记未观测段，Find.AnyPlayerHomeMap 一族只挑本用例领到的小图，主图 pawn 不收新记忆。</remarks>
+/// <remarks>只验缺省上独立小图的 World 级现场：主图零推进、小图按 15 tick 一批，冻结图落物探针记一行，当前地图探针记读点、另记未观测段，Find.AnyPlayerHomeMap 一族只挑本用例领取的小图，主图 pawn 不收新记忆。</remarks>
 [RimRunnerEnvCheck(RimRunnerFacility.IsolatedMap)]
 [RimRunnerAcknowledge(RimRunnerWarningKey.TickDeliveryGap, "ISOMAP2-MainFrozen 断言的就是冻结主图上的 pawn 整窗不经 DoTick")]
 public class Case_IsolatedMapInSitu : RimRunnerRegression
 {
-    private const string Source = "引擎承诺：使用独立小图的用例在自己领的小图上执行，主图冻结、主图上的 pawn 不推进；"
+    private const string Source = "引擎承诺：使用独立小图的用例在自己领取的小图上执行，主图冻结、主图上的 pawn 不推进；"
                                   + "小图按 vanilla 非当前地图的节奏推进（每 15 tick 一批）。不成立时小图用例的推进量与主图状态都不可信";
 
     private const int Ticks = 600;
@@ -26,7 +26,7 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
             && main != null && main != isolated,
             "ctx.Map=" + isolated + "，引擎记的当前小图=" + RimRunnerIsolatedMap.Active + "，冻结的主图=" + main
             + "，口袋图=" + isolated.IsPocketMap + "，家园=" + isolated.IsPlayerHome
-            + "（ctx.Map 应为领到的小图，为家园而非口袋图，且不是主图）",
+            + "（ctx.Map 应为领取的小图，为家园而非口袋图，且不是主图）",
             RimRunnerExpectationSource.Literal(Source));
         if (main == null || isolated != RimRunnerIsolatedMap.Active)
         {
@@ -37,7 +37,7 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
         ctx.AssertTrue("ISOMAP2-Acquired",
             extra != isolated && extra != main && extra.IsPlayerHome && !RimRunnerIsolatedMap.IsFrozenMap(extra)
             && ctx.Map == isolated && RimRunnerIsolatedMap.LeasedMaps.SequenceEqual([isolated, extra]),
-            "ctx.AcquireIsolatedMap 再领到 " + extra + "，ctx.Map=" + ctx.Map + "，本用例领到的小图："
+            "ctx.AcquireIsolatedMap 再领取到 " + extra + "，ctx.Map=" + ctx.Map + "，本用例领取的小图："
             + string.Join("、", RimRunnerIsolatedMap.LeasedMaps.Select(map => map.ToString()))
             + "（应是另一张不冻结的小图，ctx.Map 不变）",
             RimRunnerExpectationSource.Literal(Source));
@@ -107,16 +107,16 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
             idle > 0 && spare.IsPlayerHome
             && mine.Contains(any) && homes.Count == mine.Count && homes.All(mine.Contains) && randomPicks.All(mine.Contains)
             && main.IsPlayerHome,
-            "本用例领到 " + string.Join("、", mine.Select(map => map.ToString())) + "，池里另有 " + idle + " 张空闲（含刚交回的 " + spare
+            "本用例领取到 " + string.Join("、", mine.Select(map => map.ToString())) + "，池里另有 " + idle + " 张空闲（含刚交回的 " + spare
             + "，挑图之外是家园=" + spare.IsPlayerHome + "）；"
             + "Find.AnyPlayerHomeMap=" + (any?.ToString() ?? "null") + "，PlayerHomeMaps=" + string.Join("、", homes.Select(map => map.ToString()))
             + "，RandomPlayerHomeMap 20 次挑到 " + string.Join("、", randomPicks.Distinct().Select(map => map?.ToString() ?? "null"))
             + "，挑图之外主图是家园=" + main.IsPlayerHome
-            + "（应只挑到本用例领到的小图，挑图之外主图与空闲的图仍为家园）",
+            + "（应只挑到本用例领取的小图，挑图之外主图与空闲的图仍为家园）",
             RimRunnerExpectationSource.Literal(HomePickerSource));
     }
 
-    private const string HomePickerSource = "引擎承诺：小图用例体内 vanilla 挑家园图的入口（Find.AnyPlayerHomeMap 一族、任务挑图）只挑本用例领到的小图";
+    private const string HomePickerSource = "引擎承诺：小图用例体内 vanilla 挑家园图的入口（Find.AnyPlayerHomeMap 一族、任务挑图）只挑本用例领取的小图";
 
     private const string SpawnProbeSource = "引擎承诺：往冻结的主图上落物时报告记一行（落在那里的东西不推进，记这一行供核对用例是否落错图）";
 

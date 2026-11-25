@@ -201,7 +201,7 @@ internal static class RimRunnerMapLifecyclePatches
                 if (GeneratedThisTick(map) && ComponentHoldOf(map) is { } hold)
                 {
                     RimRunnerSceneHost.WarnScene(scene, RimRunnerWarningKey.ZeroTickMap,
-                        RimRunnerSentinel.Compose("场面 " + sceneId + "：拆图时该图生成后一格 tick 都没推过，GameComponent 仍拿着该图或图上的物——"
+                        RimRunnerSentinel.Compose("场面 " + sceneId + "：拆图时该图生成后一格 tick 都没推过，GameComponent 仍持有该图或图上的物——"
                         + "推 tick 才消费的队列项随图失效，错误级日志出在之后推 tick 时",
                             map + "，引用路径 " + hold),
                         Source);
@@ -217,7 +217,7 @@ internal static class RimRunnerMapLifecyclePatches
                 if (CreatedAt.TryGetValue(map.uniqueID, out int t) && t == Find.TickManager.TicksGame
                     && ComponentHoldOf(map) is { } hold)
                 {
-                    RimRunnerSentinel.Warn(RimRunnerWarningKey.ZeroTickMap, caseId + "：拆图时该图生成后一格 tick 都没推过，GameComponent 仍拿着该图或图上的物——"
+                    RimRunnerSentinel.Warn(RimRunnerWarningKey.ZeroTickMap, caseId + "：拆图时该图生成后一格 tick 都没推过，GameComponent 仍持有该图或图上的物——"
                         + "拆图后再推 tick 的错误级日志记在当时正在执行的用例名下",
                         map + "，引用路径 " + hold);
                 }

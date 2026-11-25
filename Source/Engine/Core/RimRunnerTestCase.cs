@@ -98,7 +98,7 @@ public interface IRimRunnerPhasedCase
     int? CheckpointTickBudget => null;
 
     /// <summary>两 phase 之间能容忍的 TicksGame 差上限，含读档补推；null（缺省）= 不限。</summary>
-    /// <remarks>至少为 1，在独立小图上至少为 2（领回停放的图另补推 1 tick）。超出与图拍数超预算同一处置。</remarks>
+    /// <remarks>至少为 1，在独立小图上至少为 2（取回停放的图另补推 1 tick）。超出与图拍数超预算同一处置。</remarks>
     int? CheckpointClockBudget => null;
 }
 
@@ -110,7 +110,7 @@ public interface IRimRunnerPhasedCase<TContext> : IRimRunnerPhasedCase where TCo
     /// <remarks>RunPhase 内不存档、不读档。</remarks>
     void RunPhase(TContext ctx, int phase);
 
-    /// <summary>phase ≥ 1 的独立小图领回之后、引擎替它补推读档那一拍之前调；缺省不执行任何操作。</summary>
+    /// <summary>phase ≥ 1 的独立小图取回之后、引擎替它补推读档那一拍之前调；缺省不执行任何操作。</summary>
     /// <remarks>与 phase 体同一个 ctx 与用例窗，交棒对象已可取回；内不推 tick。只给独立小图上的成员：声明 MapSite.Main 的成员若写即登记期拒，实验开关强制回主图时不调、记降级。</remarks>
     void BeforeLoadTick(TContext ctx, int phase)
     {

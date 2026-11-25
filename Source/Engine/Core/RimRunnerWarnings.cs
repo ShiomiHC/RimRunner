@@ -367,7 +367,7 @@ internal static class RimRunnerWarnings
             if (OriginKeys.Contains(ack.Key) && ack.Origin == null)
             {
                 findings.Add(RimRunnerFinding.Warning(id, RimRunnerWarningKey.InertDeclaration,
-                    "用例 " + id + " 认领 " + ack.Key + " " + OriginMissingReason + "，这条认领不生效：这个键的每行行首标着归属"));
+                    "用例 " + id + " 认领 " + ack.Key + " " + OriginMissingReason + "，这条认领不生效：这个键的每行行首标有归属"));
                 continue;
             }
 

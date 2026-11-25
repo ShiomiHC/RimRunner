@@ -231,7 +231,7 @@ internal static class RimRunnerCheckpointPlanner
         else if (sitedOnIsolatedMap && clockBudget < 2)
         {
             faults.Add("用例 " + id + " 的 CheckpointClockBudget = " + clockBudget
-                       + "：在独立小图上至少为 2（读档补推 1 tick，领回停放的图时再替该图补推 1 tick）");
+                       + "：在独立小图上至少为 2（读档补推 1 tick，取回停放的图时再替该图补推 1 tick）");
         }
 
         if (tickBudget < 1)
@@ -323,7 +323,7 @@ internal static class RimRunnerCheckpointPlanner
         int? tickBudget = phased?.CheckpointTickBudget;
         return sitedOnIsolatedMap && tickBudget != null
             ? "用例 " + id + " 的 CheckpointTickBudget = " + tickBudget + " 声明多余：独立小图在两 phase 之间冻结，"
-              + "本图只接受领回时补推的 1 拍"
+              + "本图只接受取回时补推的 1 拍"
             : null;
     }
 

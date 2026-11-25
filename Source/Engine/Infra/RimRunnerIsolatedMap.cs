@@ -296,7 +296,7 @@ internal static class RimRunnerIsolatedMap
         DropIfStale();
         if (leased.Count > 0)
         {
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 上一条用例领的独立小图未收："
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 上一条用例领取的独立小图未收："
                                                 + string.Join("、", leased.Select(entry => entry.Map.ToString())));
         }
 
@@ -321,7 +321,7 @@ internal static class RimRunnerIsolatedMap
         DropIfStale();
         if (leased.Count > 0)
         {
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 上一条用例领的独立小图未收："
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 上一条用例领取的独立小图未收："
                                                 + string.Join("、", leased.Select(entry => entry.Map.ToString())));
         }
 
@@ -333,7 +333,7 @@ internal static class RimRunnerIsolatedMap
 
         if (frozen == null || ctx.Map != frozen)
         {
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 多阶段用例 " + owner + " 续领小图时主图未冻结（冻结="
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 多阶段用例 " + owner + " 继续领取小图时主图未冻结（冻结="
                                                 + frozen + "，ctx.Map=" + ctx.Map + "）");
         }
 
@@ -375,8 +375,8 @@ internal static class RimRunnerIsolatedMap
         DropIfStale();
         if (frozen != null || leased.Count > 0 || sceneLease != null)
         {
-            string holder = frozen != null ? "多阶段用例停放着小图" : leased.Count > 0 ? "用例领的小图未还" : "上一场的图未还";
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 场面领独立小图时已有领用（" + holder + "）");
+            string holder = frozen != null ? "多阶段用例有停放的小图" : leased.Count > 0 ? "用例领取的小图未还" : "上一场的图未还";
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 场面领取独立小图时已有领用（" + holder + "）");
         }
 
         Map main = RimRunnerCurrentMapProbe.EngineCurrentMap()!;
@@ -394,7 +394,7 @@ internal static class RimRunnerIsolatedMap
     {
         if (sceneLease == null)
         {
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 场面没有领独立小图，无图可切");
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 场面没有领取独立小图，无图可切");
         }
 
         Current.Game.CurrentMap = sceneLease.Map;

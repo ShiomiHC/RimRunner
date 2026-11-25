@@ -27,7 +27,7 @@ public static class RimRunnerDamage
     }
 
     /// <summary>护甲 roll 之前已消耗的 Rand 抽数。</summary>
-    /// <remarks>前提：窗口内只有一次 pawn.TakeDamage(dinfo)，dinfo 经 Make 构造、part 与本方法同一非空部位。护甲 roll 是窗口内第（本值 + 1）次抽取。pawn 穿着衣物时判 SENTINEL_FAULT。</remarks>
+    /// <remarks>前提：窗口内只有一次 pawn.TakeDamage(dinfo)，dinfo 经 Make 构造、part 与本方法同一非空部位。护甲 roll 是窗口内第（本值 + 1）次抽取。pawn 穿有衣物时判 SENTINEL_FAULT。</remarks>
     public static int RandDrawsBeforeArmorRoll(Pawn pawn, BodyPartRecord part, DamageDef def)
     {
         string? blocker = ArmorRollModelBlocker(pawn, part);
@@ -45,7 +45,7 @@ public static class RimRunnerDamage
         int worn = pawn.apparel?.WornApparelCount ?? 0;
         if (worn > 0)
         {
-            return "护甲 roll 计数只对裸身 pawn 成立：穿着 " + worn + " 件衣物，着装 tale 与衣物自损链的抽数不可建模";
+            return "护甲 roll 计数只对裸身 pawn 成立：该 pawn 穿有 " + worn + " 件衣物，着装 tale 与衣物自损链的抽数不可建模";
         }
 
         return null;

@@ -34,7 +34,7 @@ internal static class Patch_Pawn_JobTracker_TryTakeOrderedJob_RimRunnerSentinel
         }
 
         RimRunnerSentinel.Warn(RimRunnerWarningKey.QueueKey, caseId + "：TryTakeOrderedJob 下令时排队键读作按下、未传 requestQueueing 且键态改变排入结果："
-                                + "按着排队键会把指令并入队列而非顶掉或清空，下令结果取决于键盘态",
+                                + "按住排队键会把指令并入队列而非顶掉或清空，下令结果取决于键盘态",
             (___pawn.LabelShort ?? "<null pawn>") + " ← " + (job.def?.defName ?? "<null job>")
             + "（当前 " + (__instance.curJob?.def?.defName ?? "无") + "）");
     }

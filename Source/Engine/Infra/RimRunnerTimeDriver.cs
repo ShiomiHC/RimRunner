@@ -100,7 +100,7 @@ public static class RimRunnerTimeDriver
         return elapsed;
     }
 
-    /// <summary>暂停着跨帧连推到 done 成立或推满 cap，每帧至多 5000 tick。</summary>
+    /// <summary>暂停状态下跨帧连推到 done 成立或推满 cap，每帧至多 5000 tick。</summary>
     /// <remarks>yield 它，每 tick 推之前判一次 done，帧与帧之间可取消，原来的速度推完还原。调用时 done 已成立即零推进。持续错误级日志熔断即停止推进，结果按未成立给。done 抛出即中止调用方。</remarks>
     /// <param name="cap">推进上限，单位 tick，不得为负。</param>
     /// <param name="done">停止条件，成立即停止推进。</param>

@@ -188,8 +188,8 @@ public class Case_LogCaptureSurface : RimRunnerRegression
                 RimRunnerLogMonitor.VanillaCountForSelfTest < RimRunnerLogMonitor.VanillaMessageCap / 2
                 && closed == null,
                 "推进一帧后日志条数未复位或日志开关未全开：计数=" + RimRunnerLogMonitor.VanillaCountForSelfTest
-                + "（应低于上限一半），关着的开关=" + (closed ?? "无") + "；不复位时触顶后 Debug.* 输出的错误级日志一直无法捕获，"
-                + "开关关着的那一路错误级日志两个来源都无法捕获",
+                + "（应低于上限一半），处于关闭的开关=" + (closed ?? "无") + "；不复位时触顶后 Debug.* 输出的错误级日志一直无法捕获，"
+                + "关闭的开关所管的错误级日志两个来源都无法捕获",
                 RimRunnerExpectationSource.Literal(Source));
             AssertClaimedOnce(ctx, "LOGCAP1-AfterReset-UnityDebug", "LOGCAP1 复位后直发探针",
                 () => Debug.LogError("LOGCAP1 复位后直发探针"),

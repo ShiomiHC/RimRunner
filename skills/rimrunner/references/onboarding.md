@@ -20,7 +20,7 @@
 
 ## 编排描述符
 
-编排描述符分四份，样板里各有一份，带着该份的全部键，每个键上方一行说明：
+编排描述符分四份，样板里各有一份，含该份的全部键，每个键上方一行说明：
 
 | 文件 | 写什么 |
 |---|---|
@@ -72,7 +72,7 @@
 
 测试程序集里须有**恰好一个** `RimRunnerProductDescriptor` 的非抽象子类，由引擎反射发现；零个即抛出异常。三个成员都要写：
 
-- `ProbeTypes`：产品每个程序集的一个类型（通常是各 mod 的 `Mod` 子类），用 `typeof` 写。引擎凭 `ProbeTypes` 认出哪些 Def、补丁与错误级日志属于本产品，IL 与反射类随包检查只扫这些类型所在的程序集
+- `ProbeTypes`：产品每个程序集的一个类型（通常是各 mod 的 `Mod` 子类），用 `typeof` 写。引擎凭 `ProbeTypes` 识别哪些 Def、补丁与错误级日志属于本产品，IL 与反射类随包检查只扫这些类型所在的程序集
 - `DefNameFallbackPrefix`：本产品 Def 的 defName 前缀，Def 找不到所属 mod 时据此认领
 - `Configure(c)`：登记本产品的能力（期望表、场景、生成钩子等），无能力可登记时留空方法体。
   可登记的项用 `rimrunner engine find RimRunnerProductCapabilities.` 列出。
@@ -82,7 +82,7 @@
 
 产品由几个 mod 组成（主 mod 加兼容子 mod 一类）时，每个 mod 一个 `[[units]]`，各 mod 的程序集都列进 `[[builds]]`。
 
-冷启动时 CLI 给各单元的 packageId 加后缀，About.xml 里写着本产品各单元 id 的这几处一起改：自己的 `<packageId>`，`modDependencies`、`loadBefore`、`loadAfter`、`forceLoadBefore`、`forceLoadAfter`、`incompatibleWith`（含 `…ByVersion`）下的条目。
+冷启动时 CLI 给各单元的 packageId 加后缀，About.xml 里含本产品各单元 id 的这几处一起改：自己的 `<packageId>`，`modDependencies`、`loadBefore`、`loadAfter`、`forceLoadBefore`、`forceLoadAfter`、`incompatibleWith`（含 `…ByVersion`）下的条目。
 比对不分大小写，与游戏认 packageId 一样。本产品的 id 写在别处（`description` 与依赖项的 `displayName` 除外）时冷启动前即拒，点名那个位置。
 
 某个子 mod 只在部分名单里装（兼容子 mod 只在对方 mod 在场时装）：

@@ -80,7 +80,7 @@ public sealed class LoadDirPool(OrchestratorDescriptor descriptor, string produc
             if (element.Name.LocalName == "displayName") continue;
             if (ids.Contains(element.Value.Trim()))
                 throw new StoreException(
-                    $"About.xml 的 {XmlPath(element)} 写着本产品的 packageId {element.Value.Trim()}，"
+                    $"About.xml 的 {XmlPath(element)} 的值为本产品的 packageId {element.Value.Trim()}，"
                     + "不在改写的位置上（依赖、加载序、不兼容声明）");
         }
 

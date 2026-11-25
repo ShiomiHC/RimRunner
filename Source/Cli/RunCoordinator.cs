@@ -2032,7 +2032,7 @@ public sealed class RunCoordinator
                 foreach (string wrapper in legacyWrappers)
                 {
                     LegacyWrappers.RemoveWrapper(wrapper);
-                    CliLog.Info($"[claim] 实例 {claim.DisplayName} 旧登记记着的旧形态载入目录已删除：{wrapper}");
+                    CliLog.Info($"[claim] 实例 {claim.DisplayName} 旧登记记录的旧形态载入目录已删除：{wrapper}");
                 }
 
                 if (staleTestMod != null && TestModSynthesizer.Unlink(store, staleTestMod) is { } form)

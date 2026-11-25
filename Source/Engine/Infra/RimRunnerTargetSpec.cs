@@ -19,7 +19,7 @@ public abstract record RimRunnerTargetSpecBase
     public required bool Threat { get; init; }
 
     /// <summary>行动档。</summary>
-    /// <remarks>非 Mobile 的真实物种靶须配 agency=Pinned。Stunned 不管承伤，要靶全程站着配 damage=Absorbed。</remarks>
+    /// <remarks>非 Mobile 的真实物种靶须配 agency=Pinned。Stunned 不管承伤，要靶全程站立，配 damage=Absorbed。</remarks>
     public required RimRunnerPawnMobilityProfile Mobility { get; init; }
 
     /// <summary>承伤档。</summary>
@@ -218,7 +218,7 @@ public enum RimRunnerTargetAgency
     Free,
 
     /// <summary>先站定：落图先起一段永不到期的 Wait，首次被打断后交回思维树。</summary>
-    /// <remarks>站着的是原版 Wait，贴身自动近战照常。</remarks>
+    /// <remarks>站立用原版 Wait，贴身自动近战照常。</remarks>
     StandThenFree
 }
 

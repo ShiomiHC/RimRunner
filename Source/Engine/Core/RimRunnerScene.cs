@@ -24,7 +24,7 @@ public abstract class RimRunnerScene
     public virtual Type? InspectTab => null;
 
     /// <summary>场面立在哪张图上，缺省独立小图（缺省档、混凝土）。</summary>
-    /// <remarks>缺省与 Isolated(档位, 地面) 立场时领一张独立小图设为当前地图，图上只有场面自己装配的。Main(理由) 立在基线档主图上。展台换场清理后图面复原即留给下一场同档同地面的场面，否则回载基线档。拍摄时镜头之间世界动过即先回载。</remarks>
+    /// <remarks>缺省与 Isolated(档位, 地面) 立场时领取一张独立小图设为当前地图，图上只有场面自己装配的。Main(理由) 立在基线档主图上。展台换场清理后图面复原即留给下一场同档同地面的场面，否则回载基线档。拍摄时镜头之间世界动过即先回载。</remarks>
     public virtual RimRunnerMapSite MapSite => RimRunnerMapSite.Default;
 
     /// <summary>装配场面，返回相机聚焦并选中的对象（须已在当前地图上）。</summary>

@@ -172,7 +172,7 @@ public partial class RimRunnerContext
 
     /// <summary>用例期内把 tick 分档率钉在 rate，子弹一并钉住，收尾自动卸。</summary>
     /// <remarks>作用于全部地图上按相机判档的物，子弹钉 1–5 取 1、钉 15 取 15，自带固定档的物不变；小图上不钉时 vanilla 判 15。只在用例体内可调。已钉住时、推 tick 期间调用，或 rate 既不是 1–5 也不是 15，即抛。</remarks>
-    /// <param name="rate">分档率：1–5 是视野内（玩家正看着），15 是离屏（玩家未观看）。</param>
+    /// <param name="rate">分档率：1–5 是视野内（玩家正在观看），15 是离屏（玩家未观看）。</param>
     public RimRunnerTickRatePin PinTickRate(int rate)
     {
         RequireBody("PinTickRate");
@@ -468,12 +468,12 @@ public partial class RimRunnerContext
         }
     }
 
-    /// <summary>再领一张独立小图，用例收尾时引擎收回；不给档位与首张同尺寸。</summary>
-    /// <remarks>只在独立小图上执行的用例体或场面步骤内可调；领到的图可能接自池中前一条用例，领到那刻已有的对象算基线；地面恒与首张同，ctx.Map 仍是首张。</remarks>
+    /// <summary>再领取一张独立小图，用例收尾时引擎收回；不给档位与首张同尺寸。</summary>
+    /// <remarks>只在独立小图上执行的用例体或场面步骤内可调；领取的图可能接自池中前一条用例，领取到那刻已有的对象算基线；地面恒与首张同，ctx.Map 仍是首张。</remarks>
     public Map AcquireIsolatedMap(RimRunnerMapTier? tier = null) =>
         AcquireIsolatedMapOf(tier is { } given ? RimRunnerIsolatedMap.SizeOf(given) : null);
 
-    /// <summary>再领一张给定宽高的独立小图，用例收尾时引擎收回。</summary>
+    /// <summary>再领取一张给定宽高的独立小图，用例收尾时引擎收回。</summary>
     /// <remarks>调用面与收回同不给尺寸的那一版；宽高非正即抛。</remarks>
     /// <param name="width">宽，x 方向格数。</param>
     /// <param name="height">高，z 方向格数。</param>

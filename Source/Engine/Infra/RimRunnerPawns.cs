@@ -32,7 +32,7 @@ public enum RimRunnerPawnMobilityProfile
     AwakeImmobile,
 
     /// <summary>眩晕但不倒地：靶稳站格心，AI 无法拉走。</summary>
-    /// <remarks>不改承伤：挨打照常结算，打到倒地即离开本档。要靶全程站着，靶规格写 damage=Absorbed，或直接调用时另调 RimRunnerInvulnerability.AddAbsorbed。</remarks>
+    /// <remarks>不改承伤：挨打照常结算，打到倒地即离开本档。要靶全程站立，靶规格写 damage=Absorbed，或直接调用时另调 RimRunnerInvulnerability.AddAbsorbed。</remarks>
     Stunned
 }
 
@@ -51,7 +51,7 @@ public static class RimRunnerPawns
     public const string PinHediffName = "RimRunner_Pinned";
 
     /// <summary>AwakeImmobile 与 SubdueAndPin 挂的钉住 hediff。</summary>
-    /// <remarks>只锁 Moving（封顶 0.1，低于能动门槛即倒地）与爬行；无病程，带着时不自愈、不到期。</remarks>
+    /// <remarks>只锁 Moving（封顶 0.1，低于能动门槛即倒地）与爬行；无病程，存在期间不自愈、不到期。</remarks>
     public static HediffDef PinHediff => DefDatabase<HediffDef>.GetNamed(PinHediffName);
 
     /// <summary>该 pawn 是否本 phase 经本类生成。</summary>
@@ -514,7 +514,7 @@ public static class RimRunnerPawns
 
     /// <summary>确定性归一化：清随机 trait、钉年龄、换中性背景、销毁衣装武器与行囊；幂等。</summary>
     /// <remarks>clearGeneratedHediffs 为真时另清空全部 hediff。</remarks>
-    /// <exception cref="InvalidOperationException">pawn 是暴力档 Incapable 的规格靶，或是带着随身物的袭击成员时抛。</exception>
+    /// <exception cref="InvalidOperationException">pawn 是暴力档 Incapable 的规格靶，或是带有随身物的袭击成员时抛。</exception>
     public static void NormalizeForDeterminism(Pawn pawn, bool clearGeneratedHediffs = false)
     {
         string? raidLoadout = IsRaidMember(pawn) ? DescribeLoadout(pawn) : null;
@@ -747,7 +747,7 @@ public static class RimRunnerPawns
     }
 
     /// <summary>回收一次性 pawn：解散它所在或引用它的编队，中断图上以它为目标的 job，连尸体一起销毁并丢弃。</summary>
-    /// <remarks>可重复调：null 返回，已丢弃的只摘信与夹具。已离场照销毁丢弃；搬着的物品随它销毁，被搬的 pawn 与用例前物品落回图上。连带销毁其火、弹丸与未结算爆炸；在飞弹改打所在格。受击账留到段末；长用例可 Forget 或 Watch([])。</remarks>
+    /// <remarks>可重复调：null 返回，已丢弃的只摘信与夹具。已离场照销毁丢弃；所搬的物品随它销毁，被搬的 pawn 与用例前物品落回图上。连带销毁其火、弹丸与未结算爆炸；在飞弹改打所在格。受击账留到段末；长用例可 Forget 或 Watch([])。</remarks>
     public static void Cleanup(Pawn? pawn)
     {
         if (pawn == null)

@@ -48,14 +48,14 @@ CLI 开始执行前从编译出的 DLL 读下面这些成员生成用例名册�
 - **文字**：`ctx.AddReadoutText(标题, 正文)`。正文落成 `artifacts/readouts/` 下的文件，报告与产出清单只记标题与路径。只放运行期才知道、读侧算不出的内容。只看这一轮的单值走 `AddDiagnostic`。要跨轮曲线走 `AddSample`（`fixtures.md`）。
 - **图**：`ctx.AddScreenshot(说明, 取景)`。说明随图进报告与产出清单。截图用例申报 `MinTextures => RimRunnerTextures.Native`。
 
-标题与说明只写认出这一份产出要的内容（拍的是什么、运行时才知道的值、与同条其它产出的区别），40 字以内。**判定写法写在调用处正上方的 `//` 注释里**，一份产出一段。用例整体的范围仍写在类头 `<remarks>`。
+标题与说明只写辨别这一份产出所需的内容（拍的是什么、运行时才知道的值、与同条其它产出的区别），40 字以内。**判定写法写在调用处正上方的 `//` 注释里**，一份产出一段。用例整体的范围仍写在类头 `<remarks>`。
 
 取景从 `RimRunnerCrop` 入手：`On(thing)` 框对象并选中它，`Cells(map, rect)` 框一片格子，`Gui(rect)` 框一块屏幕 UI，`Full` 整屏。`On`、`Cells`、`Gui` 入手的取景再按需叠加 `WithPane()` 检查面板、`WithGizmos()` 按钮栏、`WithGui(rect)`。逐项见 `rimrunner engine find RimRunnerCrop.`。
 
 - **界面档**：取景都能接 `WithUi(RimRunnerUiLevel)`。带屏幕部件的取景（含 `Gui` 起手的）只收 `Screen`，传入其余档即抛。四档逐档多画一些（逐档见 `rimrunner engine find RimRunnerUiLevel.`）。验「截图模式下产品的内容已隐藏」用 `ScreenshotMode`。未指定 `WithUi` 时，带屏幕部件的取景与 `Full` 取 `Screen`，其余取 `Map`。整屏去掉界面写 `Full.WithUi(RimRunnerUiLevel.Map)`。
 - **拍照时刻**：图在本 phase 返回之后、`Defer` 清理之前统一拍，同一 phase 里交的几张是同一时刻的不同取景。要几种状态各一张，每种状态一个 Id（参数化用例）或同一时刻摆几份现场。
 - **一张一图**：同一张截图里的对象须在同一张地图上；拍时切到那张图，拍完切回。
-- **窗口与界面摆设**：拍时要切图（用例在小图上，或对象在别的图上）时，切图会重建开着的主 tab，用例体里打开的研究窗、选定的分页不会带到图里。开窗与选分页写进 `ctx.AddScreenshot(说明, 取景, prepare: () => …)`：引擎切图、设好相机与选中之后调 `prepare`。`prepare` 只布置界面，里面推 tick 或再交截图即抛。`prepare` 抛出时这张图没拍成。`prepare` 开的窗口拍完即关，`prepare` 改的选中在下一张之前还原。
+- **窗口与界面摆设**：拍时要切图（用例在小图上，或对象在别的图上）时，切图会重建已打开的主 tab，用例体里打开的研究窗、选定的分页不会带到图里。开窗与选分页写进 `ctx.AddScreenshot(说明, 取景, prepare: () => …)`：引擎切图、设好相机与选中之后调 `prepare`。`prepare` 只布置界面，里面推 tick 或再交截图即抛。`prepare` 抛出时这张图没拍成。`prepare` 开的窗口拍完即关，`prepare` 改的选中在下一张之前还原。
 - **相机与出图框按开始出图时的相机投影取**：框的是这片地面在屏幕上的外接框，改成斜视角的相机 mod 下同样能框住。
 - **画在别处的格**：引擎按逻辑位置（占格、`DrawPos`）对焦与裁框。分层画法的相机 mod 把楼上的格画在地面格正上方时，对到的是空处。产品描述符登记 `DrawnCellCenter(换算)` 后，取景、场面悬停与机位跟随都按画出位置。画出哪几层由相机 mod 的视图状态定，层切换留在相机 mod。
 - 要截图的写单段或多阶段用例：真实帧用例收尾即回载基线档，无法截图。
@@ -81,7 +81,7 @@ CLI 开始执行前从编译出的 DLL 读下面这些成员生成用例名册�
 | `MapSite` | 在哪张图上执行，缺省按档定（`rimrunner engine find RimRunnerMapSite.Default`）。独立小图省的是主图那份每 tick 成本，生成每槽付一次。小图用例的用例体内，vanilla 挑家园图的入口（`Find.AnyPlayerHomeMap` 一族、任务挑图）只挑本用例持有的小图。用例自己取图用 `ctx.Map` |
 
 **小图上的用例**：小图是一张无人查看的地图，视野矩形（`CameraDriver.CurrentViewRect`）是主图相机的坐标，与真实游戏里相机停在别的图上时一样。
-以视野判定玩法的代码不先判当前地图，在小图上与玩家的多图存档里同样读到错误的值。要测「玩家正看着」的行为，覆写 `public override RimRunnerMapSite MapSite => RimRunnerMapSite.Main("<留主图的理由>");`，
+以视野判定玩法的代码不先判当前地图，在小图上与玩家的多图存档里同样读到错误的值。要测「玩家正在观看」的行为，覆写 `public override RimRunnerMapSite MapSite => RimRunnerMapSite.Main("<留主图的理由>");`，
 用 `RimRunnerCameraFixture.LockOn` 把目标锁进视野（`LockAwayFrom` 锁离屏）；小图上的锁在 `ctx.AsCurrentMap` 内读才生效。
 真实帧用例例外：在小图上时引擎整段把小图设为当前地图、相机对准图心，帧内绘制与相机都属小图，按相机判档与真实游戏同口径。
 
@@ -216,7 +216,7 @@ public sealed class SomeBarrierCase : RimRunnerRegression, IRimRunnerPhasedCase<
 
 **读档期按设计必出错误级日志**（被测侧在读档时报错是期望行为）：用 `[RimRunnerAcknowledgeLog]` 认领那一行，并声明 `RequiresSoloBatch => true`。同批成员共用存档窗与载档窗，窗里的日志记到每个成员头上，许可只认领本用例那一份。不独占时，同批别的成员全按这一行判 FAIL。每条声明者让一轮多一次存读档，只给按设计必出日志的用例用。与 `RequiresSoloBatch` 并存的批尾、资源键、两个预算都不起作用，写上即出 `INERT-DECLARATION`；留主图的 World 级用例声明后可以不写 `CheckpointTickBudget`。
 
-**读档刚还原、还未推过首拍的状态**：phase 体看到的图已推过读档后那一拍，「读档时就已还原」与「首拍里才补上」在 phase 体里无法分辨。独立小图上的成员可写 `BeforeLoadTick(ctx, phase)`：续段领回小图之后、引擎替它补推那一拍之前调，与 phase 体同一个 `ctx`，交棒对象已可取回，里面不能推 tick。留在主图的用例写该成员，登记期即拒：主图那一拍在 vanilla 载档收尾里就已推。
+**读档刚还原、还未推过首拍的状态**：phase 体看到的图已推过读档后那一拍，「读档时就已还原」与「首拍里才补上」在 phase 体里无法分辨。独立小图上的成员可写 `BeforeLoadTick(ctx, phase)`：续段取回小图之后、引擎替它补推那一拍之前调，与 phase 体同一个 `ctx`，交棒对象已可取回，里面不能推 tick。留在主图的用例写该成员，登记期即拒：主图那一拍在 vanilla 载档收尾里就已推。
 
 **续段的装配**：`Ensure` 只在 phase 0 调。读档会按定义重建一部分整局对象（`Storyteller` 的 comp 一类），phase 0 的归一不随存档传递。要在续段重做的归一写在装配器的 `Resume` 里：World 级多阶段用例每个续段读档后、续段体之前调。小图上的成员在引擎补推读档那一拍之前调，主图上的成员在那一拍之后调。`Resume` 里不推 tick，也不能调 `DeferScenarioRestore`。单阶段用例与场面只走 `Ensure`，归一在 `Ensure` 里仍要做。
 
@@ -303,8 +303,8 @@ public sealed class SomeBarrierCase : RimRunnerRegression, IRimRunnerPhasedCase<
 声明依赖的用例调用得到的助手不必再声明：该助手只在包在场时执行。
 基类、接口与值类型字段不能用可缺席包的类型：缺该包的名单下整个测试程序集无法装入。这些位置改用恒在的类型，用到该包类型的代码挪进声明依赖的类或隔离方法。
 
-**引擎在带着那个包的名单下查**（包缺席闸），查出来的是警告（`ABSENTABLE-*`）：「可缺席」= 产品名单目录（`<dir>/modlists`）下至少一份能单独执行的名单不含该包。只有一份名单时跳过这项检查。违例只在可缺席包装着的那一轮能判定。
+**引擎在含那个包的名单下查**（包缺席闸），查出来的是警告（`ABSENTABLE-*`）：「可缺席」= 产品名单目录（`<dir>/modlists`）下至少一份能单独执行的名单不含该包。只有一份名单时跳过这项检查。违例只在装载可缺席包的那一轮能判定。
 
 ### 12.2 用例组
 
-类上挂 `[RimRunnerGroup("<组>")]`，可挂多个、随基类继承（挂在中间基类上即整族带组）。组名只许英文字母、数字、`-` 与 `_`，`all` 留作「不按组过滤」，组名不合格即编译失败，输出 RR0002；不预先登记，用例名册里有用例带着的就是已有的组。`rimrunner run --group <组>,…` 与名单的 `[rimrunner].groups` 按组选批时，只选带所列任一组的产品用例；随包检查不受组过滤。每个用例类都须有组，回归档、读数档与排除名单里的用例一样须有组，环境体检（`[RimRunnerEnvCheck]`）除外：无组的类编译失败，输出 RR0001。`rimrunner cases groups` 列各组的用例。只有一个用例类带着的组标 `[WARN]`：核对该组名是否拼错。组只决定进不进批。
+类上挂 `[RimRunnerGroup("<组>")]`，可挂多个、随基类继承（挂在中间基类上即整族带组）。组名只许英文字母、数字、`-` 与 `_`，`all` 留作「不按组过滤」，组名不合格即编译失败，输出 RR0002；不预先登记，用例名册里有用例声明的就是已有的组。`rimrunner run --group <组>,…` 与名单的 `[rimrunner].groups` 按组选批时，只选带所列任一组的产品用例；随包检查不受组过滤。每个用例类都须有组，回归档、读数档与排除名单里的用例一样须有组，环境体检（`[RimRunnerEnvCheck]`）除外：无组的类编译失败，输出 RR0001。`rimrunner cases groups` 列各组的用例。只有一个用例类声明的组标 `[WARN]`：核对该组名是否拼错。组只决定进不进批。

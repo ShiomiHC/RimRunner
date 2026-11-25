@@ -188,7 +188,7 @@ public sealed class RimRunnerGizmoButton
     /// <summary>禁用理由，未禁用或未给出理由为 null。</summary>
     public string? DisabledReason => Gizmo.Disabled && !Gizmo.disabledReason.NullOrEmpty() ? Gizmo.disabledReason.StripTags() : null;
 
-    /// <summary>开关型按钮此刻开着与否，不是开关型为 null。</summary>
+    /// <summary>开关型按钮此刻是否开启，不是开关型为 null。</summary>
     public bool? ToggleActive => Gizmo is Command_Toggle { isActive: { } isActive } ? isActive() : null;
 
     internal List<Gizmo> Group { get; }
@@ -204,8 +204,8 @@ public sealed class RimRunnerGizmoButton
 
 /// <summary>点一个按钮的结果：开关状态、新开的窗口、选目标态与选中的指令。</summary>
 /// <param name="Label">点的按钮的文字。</param>
-/// <param name="ToggleBefore">点之前开着与否，不是开关型为 null。</param>
-/// <param name="ToggleAfter">点之后开着与否，不是开关型为 null。</param>
+/// <param name="ToggleBefore">点击前是否开启，不是开关型为 null。</param>
+/// <param name="ToggleAfter">点击后是否开启，不是开关型为 null。</param>
 /// <param name="OpenedWindows">点之后新进栈的窗口，右键菜单附带选项个数。</param>
 /// <param name="StartedTargeting">点之后进选目标态。</param>
 /// <param name="SelectedDesignator">点之后新选中的指令的文字，没有新选中的指令为 null。</param>

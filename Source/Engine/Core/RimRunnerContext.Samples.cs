@@ -85,7 +85,7 @@ public sealed partial class RimRunnerReadoutContext
 
         if (!window.Closed)
         {
-            throw new InvalidOperationException(RimRunnerLog.Prefix + " 交样本时窗还开着（" + series + "/" + segment
+            throw new InvalidOperationException(RimRunnerLog.Prefix + " 提交样本时窗口未关闭（" + series + "/" + segment
                 + "）");
         }
 

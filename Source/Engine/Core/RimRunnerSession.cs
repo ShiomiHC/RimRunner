@@ -2438,10 +2438,10 @@ public static partial class RimRunnerSession
                                       + previousPhaseEndTick + "）晚 " + drift + " tick（checkpoint 存于 tick "
                                       + InRun.CheckpointSaveTick + "）；同批 " + InRun.CheckpointBatchSize
                                       + " 个成员共同推进游戏时间，另有 1 tick 由读档收尾时 vanilla 补推"
-                                      + (onIsolatedMap ? "、1 tick 由引擎领回停放的图时补推" : "") + "。"
+                                      + (onIsolatedMap ? "、1 tick 由引擎取回停放的图时补推" : "") + "。"
                                       + "同批成员（phase 0 序）：" + string.Join("、", CheckpointBatchMembersOf(entry.id))
                                       + (onIsolatedMap
-                                          ? "。本图在两 phase 之间冻结，只走领回补推的 1 拍、时钟差 " + drift
+                                          ? "。本图在两 phase 之间冻结，只走取回补推的 1 拍、时钟差 " + drift
                                             + " tick"
                                           : "")
                                       + pin));

@@ -265,8 +265,8 @@ public static class RimRunnerDamageRecorder
     /// <summary>阶段标记：此后的字符串记录都带上这个标签。</summary>
     public static void Mark(string phaseLabel) => phase = phaseLabel;
 
-    /// <summary>停止监控：清空监控集，账目留着照读。</summary>
-    /// <remarks>本窗监控过的受击者与账目一起留着，Stop 之后按名读照常合法；此后不再收账、也不记漏账。账目留到用例末（多阶段为 phase 末）连同 ArmoredLedger 清空；那时仍在监控的由引擎停止并记 FIXTURE-RESIDUE。</remarks>
+    /// <summary>停止监控：清空监控集，账目保留、仍可读。</summary>
+    /// <remarks>本窗监控过的受击者与账目一并保留，Stop 之后按名读照常合法；此后不再收账、也不记漏账。账目留到用例末（多阶段为 phase 末）连同 ArmoredLedger 清空；那时仍在监控的由引擎停止并记 FIXTURE-RESIDUE。</remarks>
     public static void Stop()
     {
         watched = null;
@@ -418,7 +418,7 @@ public static class RimRunnerDamageRecorder
         DealtBySource(nominalDealtBySource, nominalUnwatched, instigator, victim, nameof(NominalDealtBySource));
 
     /// <summary>按施加者 × 受击者过滤的折甲后伤害，按来源分账。</summary>
-    /// <remarks>只记 ArmoredLedger 开着期间的命中，来源键同 NominalDealtBySource。本窗没开过监控即抛。同一笔漏账的施加者与受击者谓词都命中即抛（查名义账的漏账）。</remarks>
+    /// <remarks>只记 ArmoredLedger 开启期间的命中，来源键同 NominalDealtBySource。本窗没开过监控即抛。同一笔漏账的施加者与受击者谓词都命中即抛（查名义账的漏账）。</remarks>
     /// <exception cref="InvalidOperationException">ArmoredLedger 为假时抛。</exception>
     public static Dictionary<string, float> ArmoredDealtBySource(Func<Thing, bool> instigator, Func<Pawn, bool> victim)
     {

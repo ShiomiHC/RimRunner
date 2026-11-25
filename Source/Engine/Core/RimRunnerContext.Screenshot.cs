@@ -31,8 +31,8 @@ public sealed partial class RimRunnerReadoutContext : RimRunnerContext
     }
 
     /// <summary>截图入口：按取景登记一张图，连同说明进报告。</summary>
-    /// <remarks>在 phase 返回后、Defer 清理前统一拍：同一 phase 的多张是同一时刻的不同取景。在真实帧用例里调用即抛。拍时切到目标图会重建开着的主 tab，窗口在 prepare 里开才能进图。</remarks>
-    /// <param name="caption">拍的是什么，认出这一张图用，随截图进报告；超过 40 字出 LONG-CAPTION 警告。</param>
+    /// <remarks>在 phase 返回后、Defer 清理前统一拍：同一 phase 的多张是同一时刻的不同取景。在真实帧用例里调用即抛。拍时切到目标图会重建已打开的主 tab，窗口在 prepare 里开才能进图。</remarks>
+    /// <param name="caption">拍摄内容，用于辨别这一张图，随截图进报告；超过 40 字出 LONG-CAPTION 警告。</param>
     /// <param name="crop">取景，从 RimRunnerCrop.On、Cells、Gui、Full 起手。</param>
     /// <param name="prepare">拍前准备：切到目标图、设好相机与选中之后调，只负责开窗与选分页；里面推 tick 或交截图即抛，打开的窗口拍完即关。</param>
     public void AddScreenshot(string caption, RimRunnerCrop crop, Action? prepare = null)

@@ -38,7 +38,7 @@ public sealed class RimRunnerSpawnAt
             map ?? throw new ArgumentNullException(nameof(map), RimRunnerLog.Prefix + " AnchoredOn 须给地图"));
 
     /// <summary>距锚点的距离带内取可站、可达且有视线的随机格，可加谓词。</summary>
-    /// <remarks>cellFilter 与距离带、可站、从锚点不穿关着的门与围栏可达、有视线这四条并列筛格，半径内无一格全中才抛。选格消耗随机流。</remarks>
+    /// <remarks>cellFilter 与距离带、可站、从锚点不穿过关闭的门与围栏可达、有视线这四条并列筛格，半径内无一格全中才抛。选格消耗随机流。</remarks>
     public static RimRunnerSpawnAt Near(IntVec3 anchor, int minDistance, int maxDistance,
         Func<IntVec3, bool>? cellFilter = null, Map? map = null)
     {

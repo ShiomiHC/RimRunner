@@ -4,7 +4,7 @@ public sealed partial class RimRunnerReadoutContext
 {
     /// <summary>读数正文入口：Readout 档把正文落成文件，报告与终端只给路径。</summary>
     /// <remarks>正文不参与裁决；title 或正文为空或全是空白时仍收取并出 EMPTY-TEXT 警告，title 超过 40 字出 LONG-CAPTION 警告。</remarks>
-    /// <param name="title">只作显示，认出这一份正文用；写出的文件按本用例内的序号命名，不用标题。</param>
+    /// <param name="title">只作显示，用于辨别这一份正文；写出的文件按本用例内的序号命名，不用标题。</param>
     /// <param name="text">正文。</param>
     public void AddReadoutText(string title, string text)
     {

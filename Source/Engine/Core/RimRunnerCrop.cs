@@ -175,7 +175,7 @@ public class RimRunnerRegionCrop : RimRunnerCrop
     {
     }
 
-    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与开着的检视页）一并框进来。</summary>
+    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与已打开的检视页）一并框进来。</summary>
     public RimRunnerRegionCrop WithPane() => new(WithPaneSpec());
 
     /// <summary>把屏幕下方的 gizmo 栏一并框进来。</summary>
@@ -201,7 +201,7 @@ public class RimRunnerThingsCrop : RimRunnerRegionCrop
     /// <summary>不选中对准的 Thing：拍用例体留下的选中。</summary>
     public RimRunnerThingsCrop Unselected() => new(Spec with { Select = false });
 
-    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与开着的检视页）一并框进来。</summary>
+    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与已打开的检视页）一并框进来。</summary>
     public new RimRunnerThingsCrop WithPane() => new(WithPaneSpec());
 
     /// <summary>把屏幕下方的 gizmo 栏一并框进来。</summary>
@@ -228,7 +228,7 @@ public sealed class RimRunnerThingCrop : RimRunnerThingsCrop
     public RimRunnerTabCrop WithPane<T>() where T : ITab =>
         new(WithPaneSpec() with { Select = true, TabType = typeof(T) });
 
-    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与开着的检视页）一并框进来。</summary>
+    /// <summary>把屏幕左下的 inspect 面板（含检视页标签行与已打开的检视页）一并框进来。</summary>
     public new RimRunnerThingCrop WithPane() => new(WithPaneSpec());
 
     /// <summary>把屏幕下方的 gizmo 栏一并框进来。</summary>

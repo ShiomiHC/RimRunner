@@ -157,7 +157,7 @@ public static class BuildSaveFlow
         if (lines.Count > 0)
         {
             throw new StoreException(StoreException.Detailed(
-                $"建档回载空推 {ticks} tick 期间出现档里排着的事（{metadataPath}）：", "[建档回载]",
+                $"建档回载空推 {ticks} tick 期间发生档内已排定的事件（{metadataPath}）：", "[建档回载]",
                 lines.Select(line => StoreException.Fact(line))));
         }
 

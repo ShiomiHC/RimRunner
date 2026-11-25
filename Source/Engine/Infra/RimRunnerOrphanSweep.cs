@@ -4,7 +4,7 @@ using RimWorld.Planet;
 namespace RimRunner;
 
 /// <summary>孤儿 pawn（未销毁、未 spawn、无 holder、不在世界池）的收集与清扫。</summary>
-/// <remarks>收集面：与 PawnsFinder.All_AliveOrDead 里任一 pawn 有直接关系（任一方向）的孤儿，加上虚拟关系记录引用着的。</remarks>
+/// <remarks>收集面：与 PawnsFinder.All_AliveOrDead 里任一 pawn 有直接关系（任一方向）的孤儿，加上虚拟关系记录引用的孤儿。</remarks>
 public static class RimRunnerOrphanSweep
 {
     internal const string ReverseIndexCarrier = "反向索引";

@@ -25,7 +25,7 @@ description: rimrunner CLI 的使用要点（命令面在 --help）：日志落�
 同一棵树可以同时执行几批（几个会话共用主树，或一个会话在不同名单上同时执行）：常驻自动实例不可用时，`run` / `start` 改用临时自动实例，上屏 `[另起]` 一行，不必另开 worktree。之后按本会话那条命令的 runId 处理：
 
 - **结果**（`run`）：`judge <runId>`。`reports/latest.json` 是最后写完的那一批，不一定是本会话那一批
-- **点名**：落定实例那一行（`[冷启动]`、`[复用]` 或 `start` 的 `LOAD ONLY`）写着 `后续点名：--run-id <runId>` 时，本树有不止一个自动实例。`live` 带 `--run-id`，不带即拒；`stop --run-id <runId>` 只停止那一个实例，零参 `stop` 停止本树全部实例，含别的会话正在使用的实例
+- **点名**：落定实例那一行（`[冷启动]`、`[复用]` 或 `start` 的 `LOAD ONLY`）含 `后续点名：--run-id <runId>` 时，本树有不止一个自动实例。`live` 带 `--run-id`，不带即拒；`stop --run-id <runId>` 只停止那一个实例，零参 `stop` 停止本树全部实例，含别的会话正在使用的实例
 
 `build-save` 只用常驻实例，常驻实例忙即拒。
 

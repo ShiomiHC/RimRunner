@@ -48,7 +48,7 @@ public static class RimRunnerWarningKey
     public const string EmptyText = "EMPTY-TEXT";
 
     /// <summary>截图说明或读数正文标题超过 40 字。</summary>
-    /// <remarks>说明与标题只写认出这一份产出要的内容。</remarks>
+    /// <remarks>说明与标题只写辨别这一份产出所需的内容。</remarks>
     public const string LongCaption = "LONG-CAPTION";
 
     /// <summary>声明在本用例的档位或形态下不起作用。</summary>
@@ -74,13 +74,13 @@ public static class RimRunnerWarningKey
     /// <remarks>批级，引擎登记期出。</remarks>
     public const string AbsentableLoadTime = "ABSENTABLE-LOAD-TIME";
 
-    /// <summary>用例够得着的方法引用本进程里只由可缺席包提供的程序集，未声明依赖且未隔离。</summary>
+    /// <summary>用例可达的方法引用本进程里只由可缺席包提供的程序集，未声明依赖且未隔离。</summary>
     public const string AbsentableUnlabeled = "ABSENTABLE-UNLABELED";
 
     /// <summary>沾染可缺席包的隔离方法在方法体内判包在场。</summary>
     public const string PresenceInIsolated = "PRESENCE-IN-ISOLATED";
 
-    /// <summary>用例够得着的代码用 ModsConfig 判包在场。</summary>
+    /// <summary>用例可达的代码用 ModsConfig 判包在场。</summary>
     public const string ModsConfigActive = "MODSCONFIG-ACTIVE";
 
     /// <summary>AddSample 的行为空。</summary>
@@ -125,7 +125,7 @@ public static class RimRunnerWarningKey
     /// <remarks>正文带部位、旧件与新件的 defName。</remarks>
     public const string AddedPartStack = "ADDED-PART-STACK";
 
-    /// <summary>拆图时该图生成后一 tick 都未推过，且有 GameComponent 拿着该图或图上的物。</summary>
+    /// <summary>拆图时该图生成后一 tick 都未推过，且有 GameComponent 持有该图或图上的物。</summary>
     /// <remarks>正文带引用路径。ctx.GenerateMap 登记的图与 RimRunnerMapTeardown 拆的图拆前先推 1 tick，不出此警告；自行拆图的，拆前推 1 tick 即不出。</remarks>
     public const string ZeroTickMap = "ZERO-TICK-MAP";
 
@@ -248,7 +248,7 @@ public static class RimRunnerWarningKey
     /// <remarks>报完由引擎关掉留在栈上的阻断窗，并扑灭图上的火。留主图的 World 级用例，主图物件在最后一个 phase 收尾时还原，多阶段的按屏障批。留痕的小图弃用。</remarks>
     public const string Residue = "RESIDUE";
 
-    /// <summary>用例窗外进栈的窗口，到某条用例开始执行时仍开着。</summary>
+    /// <summary>用例窗外进栈的窗口，到某条用例开始执行时仍未关闭。</summary>
     /// <remarks>批级，每扇窗只报一次。</remarks>
     public const string StrayWindow = "STRAY-WINDOW";
 

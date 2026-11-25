@@ -10,9 +10,9 @@ internal sealed class CoordinatorLog
 
     private readonly Lock gate = new();
     private readonly StreamWriter? file;
-    private readonly ObservationSignatures.TailWatch? watch;
+    private readonly ObservationMarks.TailWatch? watch;
 
-    internal CoordinatorLog(string dir, string build, ObservationSignatures.TailWatch? watch = null)
+    internal CoordinatorLog(string dir, string build, ObservationMarks.TailWatch? watch = null)
     {
         this.watch = watch;
         try

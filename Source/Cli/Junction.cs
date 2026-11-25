@@ -45,5 +45,5 @@ public static class Junction
     }
 
     private static void OnSharingViolation(string path, int _) =>
-        ObservationSignatures.Mark(RimRunner.RimRunnerObservationKeys.SharingViolation, "共享冲突，无法打开 " + path);
+        ObservationMarks.Mark(RimRunner.RimRunnerObservationKeys.SharingViolation, "共享冲突，无法打开 " + path);
 }

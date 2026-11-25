@@ -139,12 +139,12 @@ public static class RimRunnerRegistry
                 RimRunnerLogAcks.Declared(testCase.GetType())));
 
         foreach (RimRunnerTestCase testCase in All)
-            foreach (string fault in BodyShapeFaults(testCase.Id, testCase.GetType()))
-                Fact(testCase, fault);
+            foreach (BodyShapeFault fault in BodyShapeFaults(testCase.Id, testCase.GetType()))
+                Fact(testCase, fault.Text);
 
         foreach (RimRunnerTestCase testCase in All)
-            foreach (string note in UnboundDeclarations(testCase.Id, testCase.GetType()))
-                Warn(testCase, RimRunnerWarningKey.InertDeclaration, note);
+            foreach (UnboundDeclaration note in UnboundDeclarations(testCase.Id, testCase.GetType()))
+                Warn(testCase, RimRunnerWarningKey.InertDeclaration, note.Text);
 
         foreach (RimRunnerTestCase testCase in All.Where(testCase => testCase is IRimRunnerShardable))
         {
@@ -213,9 +213,23 @@ public static class RimRunnerRegistry
             TypeWarn(type, RimRunnerWarningKey.InertDeclaration, fault);
     }
 
-    internal static List<string> BodyShapeFaults(string id, Type type)
+    internal enum BodyShapeFaultKind
     {
-        List<string> faults = [];
+        PhasedAndRealFrame,
+        PhasedNotBound,
+        PhasedWritesRun,
+        PhasedWritesSteps,
+        RealFrameWritesRun,
+        RealFrameNoBody,
+        RunAndSteps,
+        NoBody,
+    }
+
+    internal readonly record struct BodyShapeFault(BodyShapeFaultKind Kind, string Text);
+
+    internal static List<BodyShapeFault> BodyShapeFaults(string id, Type type)
+    {
+        List<BodyShapeFault> faults = [];
         if (RimRunnerCaseBody.KindOf(type) is not var (_, kindBase, contextType))
         {
             return faults;
@@ -228,21 +242,21 @@ public static class RimRunnerRegistry
         string context = contextType.Name;
 
         if (phased && realFrame)
-            faults.Add($"用例 {id} 同时实现多阶段与真实帧接口：一条用例只有一份正文");
+            faults.Add(new(BodyShapeFaultKind.PhasedAndRealFrame, $"用例 {id} 同时实现多阶段与真实帧接口：一条用例只有一份正文"));
         if (phased && !typeof(IRimRunnerPhasedCase<>).MakeGenericType(contextType).IsAssignableFrom(type))
-            faults.Add($"用例 {id} 的多阶段正文未接上：未实现 IRimRunnerPhasedCase<{context}>，引擎无法调用 RunPhase");
+            faults.Add(new(BodyShapeFaultKind.PhasedNotBound, $"用例 {id} 的多阶段正文未接上：未实现 IRimRunnerPhasedCase<{context}>，引擎无法调用 RunPhase"));
         if (phased && writesRun)
-            faults.Add($"用例 {id} 是多阶段用例又写 Run：正文只在 RunPhase");
+            faults.Add(new(BodyShapeFaultKind.PhasedWritesRun, $"用例 {id} 是多阶段用例又写 Run：正文只在 RunPhase"));
         if (phased && writesSteps)
-            faults.Add($"用例 {id} 是多阶段用例又写 RunSteps：正文只在 RunPhase");
+            faults.Add(new(BodyShapeFaultKind.PhasedWritesSteps, $"用例 {id} 是多阶段用例又写 RunSteps：正文只在 RunPhase"));
         if (realFrame && writesRun)
-            faults.Add($"用例 {id} 是真实帧用例又写 Run：正文只在 RunSteps({context} ctx)");
+            faults.Add(new(BodyShapeFaultKind.RealFrameWritesRun, $"用例 {id} 是真实帧用例又写 Run：正文只在 RunSteps({context} ctx)"));
         if (realFrame && !writesRun && !writesSteps)
-            faults.Add($"用例 {id} 声明真实帧却没有正文：真实帧用例的正文是 RunSteps({context} ctx)");
+            faults.Add(new(BodyShapeFaultKind.RealFrameNoBody, $"用例 {id} 声明真实帧却没有正文：真实帧用例的正文是 RunSteps({context} ctx)"));
         if (!phased && !realFrame && writesRun && writesSteps)
-            faults.Add($"用例 {id} 同时写 Run 与 RunSteps：一条用例只有一份正文");
+            faults.Add(new(BodyShapeFaultKind.RunAndSteps, $"用例 {id} 同时写 Run 与 RunSteps：一条用例只有一份正文"));
         if (!phased && !realFrame && !writesRun && !writesSteps)
-            faults.Add($"用例 {id} 没有正文：未覆写 Run({context} ctx) 或 RunSteps({context} ctx)，也未实现 IRimRunnerPhasedCase<{context}>");
+            faults.Add(new(BodyShapeFaultKind.NoBody, $"用例 {id} 没有正文：未覆写 Run({context} ctx) 或 RunSteps({context} ctx)，也未实现 IRimRunnerPhasedCase<{context}>"));
         return faults;
     }
 
@@ -255,9 +269,20 @@ public static class RimRunnerRegistry
         (typeof(IRimRunnerRealFrameCase), nameof(IRimRunnerRealFrameCase.LiveStoryteller))
     ];
 
-    internal static List<string> UnboundDeclarations(string id, Type type)
+    internal enum UnboundDeclarationKind
     {
-        List<string> faults = [];
+        MemberWithoutContract,
+        MemberNotBound,
+        HookNotPhased,
+        HookNotBound,
+        HookWrongContext,
+    }
+
+    internal readonly record struct UnboundDeclaration(UnboundDeclarationKind Kind, Type? Contract, string Text);
+
+    internal static List<UnboundDeclaration> UnboundDeclarations(string id, Type type)
+    {
+        List<UnboundDeclaration> faults = [];
         foreach ((Type contract, string member) in DefaultedDeclarations)
         {
             MethodInfo[] getters = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -271,7 +296,8 @@ public static class RimRunnerRegistry
 
             if (!contract.IsAssignableFrom(type))
             {
-                faults.Add($"用例 {id} 写 {member}，但未实现 {contract.Name}：这条声明不起作用");
+                faults.Add(new(UnboundDeclarationKind.MemberWithoutContract, contract,
+                    $"用例 {id} 写 {member}，但未实现 {contract.Name}：这条声明不起作用"));
                 continue;
             }
 
@@ -279,7 +305,8 @@ public static class RimRunnerRegistry
             MethodInfo bound = map.TargetMethods[Array.IndexOf(map.InterfaceMethods, contract.GetProperty(member)!.GetMethod)];
             if (!getters.Contains(bound))
             {
-                faults.Add($"用例 {id} 写 {member}，引擎经 {contract.Name} 读到的却不是它：基类列接口而本类没有再列");
+                faults.Add(new(UnboundDeclarationKind.MemberNotBound, contract,
+                    $"用例 {id} 写 {member}，引擎经 {contract.Name} 读到的却不是它：基类列接口而本类没有再列"));
             }
         }
 
@@ -302,27 +329,37 @@ public static class RimRunnerRegistry
                     .Select(contract => contract.GetGenericArguments()[0]),
             ];
             faults.Add(!typeof(IRimRunnerPhasedCase).IsAssignableFrom(type)
-                ? $"用例 {id} 写 {hook}，但不是多阶段用例：该方法不会被调用"
+                ? new(UnboundDeclarationKind.HookNotPhased, null,
+                    $"用例 {id} 写 {hook}，但不是多阶段用例：该方法不会被调用")
                 : contexts.Count == 0 || writtenContexts.Any(contexts.Contains)
-                    ? $"用例 {id} 写 {hook}，引擎经 IRimRunnerPhasedCase<TContext> 调到的却不是它：基类列接口而本类没有再列"
-                    : $"用例 {id} 写 {hook}，参数取 {string.Join("、", writtenContexts.Select(context => context.Name))}，"
-                      + $"用例的 IRimRunnerPhasedCase<TContext> 取 {string.Join("、", contexts.Select(context => context.Name))}");
+                    ? new(UnboundDeclarationKind.HookNotBound, null,
+                        $"用例 {id} 写 {hook}，引擎经 IRimRunnerPhasedCase<TContext> 调到的却不是它：基类列接口而本类没有再列")
+                    : new(UnboundDeclarationKind.HookWrongContext, null,
+                        $"用例 {id} 写 {hook}，参数取 {string.Join("、", writtenContexts.Select(context => context.Name))}，"
+                        + $"用例的 IRimRunnerPhasedCase<TContext> 取 {string.Join("、", contexts.Select(context => context.Name))}"));
         }
 
         return faults;
     }
 
     internal static IReadOnlyList<KeyValuePair<string, string>> DuplicateIdFaults =>
-        DuplicateIds(All.Select(testCase => new KeyValuePair<string, Type>(testCase.Id, testCase.GetType())));
+        DuplicateIds(All.Select(testCase => new KeyValuePair<string, Type>(testCase.Id, testCase.GetType())))
+            .Select(fault => new KeyValuePair<string, string>(fault.Id, fault.Text))
+            .ToList();
 
-    internal static List<KeyValuePair<string, string>> DuplicateIds(IEnumerable<KeyValuePair<string, Type>> registrations)
+    internal sealed record DuplicateId(string Id, int Count, IReadOnlyList<string?> Types)
+    {
+        internal string Text =>
+            $"用例 Id 重复：{Id} 登记 {Count} 次（{string.Join(" / ", Types)}）";
+    }
+
+    internal static List<DuplicateId> DuplicateIds(IEnumerable<KeyValuePair<string, Type>> registrations)
     {
         return registrations
             .GroupBy(registration => registration.Key, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
-            .Select(group => new KeyValuePair<string, string>(group.Key,
-                $"用例 Id 重复：{group.Key} 登记 {group.Count()} 次"
-                + $"（{string.Join(" / ", group.Select(registration => registration.Value.FullName))}）"))
+            .Select(group => new DuplicateId(group.Key, group.Count(),
+                group.Select(registration => registration.Value.FullName).ToList()))
             .ToList();
     }
 

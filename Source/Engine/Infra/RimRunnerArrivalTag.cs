@@ -135,20 +135,48 @@ internal static class RimRunnerArrivalTag
         }
     }
 
-    internal static string? Describe(object? thing, string? ownerId)
+    internal enum Window
     {
-        if (thing == null || !arrivals.TryGetValue(thing, out Arrival? arrival))
-        {
-            return null;
-        }
+        InCase,
+        Teardown,
+        OtherCase,
+        Between,
+    }
 
-        string line = "入场 " + DescribeOne(arrival, ownerId);
-        if (arrival.CarrierDef == null)
-        {
-            return line;
-        }
+    internal sealed class Reading
+    {
+        internal int Tick;
+        internal string? CaseId;
+        internal bool Teardown;
+        internal string? Source;
+        internal IReadOnlyList<string> Carriers = [];
+        internal Reading? CarrierOrigin;
+        internal string? OriginCarrier;
 
-        var chain = new List<string>();
+        internal Window WindowFor(string? ownerId) =>
+            CaseId == null ? Window.Between
+            : CaseId != ownerId ? Window.OtherCase
+            : Teardown ? Window.Teardown : Window.InCase;
+    }
+
+    internal static string? Describe(object? thing, string? ownerId) =>
+        Read(thing) is { } reading ? Render(reading, ownerId) : null;
+
+    internal static Reading? Read(object? thing) =>
+        thing != null && arrivals.TryGetValue(thing, out Arrival? arrival) ? ReadingOf(arrival) : null;
+
+    private static Reading ReadingOf(Arrival arrival)
+    {
+        arrival.Caller ??= RimRunnerCallSite.Describe(arrival.Trace, CallerFrames, IsSpawnPlumbing) ?? "<来源?>";
+        Reading reading = new()
+        {
+            Tick = arrival.Tick,
+            CaseId = arrival.CaseId,
+            Teardown = arrival.Teardown,
+            Source = arrival.Caller,
+        };
+
+        List<string> chain = [];
         Arrival? origin = null;
         string? originDef = null;
         Arrival? current = arrival;
@@ -164,8 +192,19 @@ internal static class RimRunnerArrivalTag
             current = current.CarrierArrival;
         }
 
-        return line + "；经 " + string.Join("←", chain)
-                    + (origin == null ? "" : "；" + originDef + " 入场 " + DescribeOne(origin, ownerId));
+        reading.Carriers = chain;
+        reading.OriginCarrier = originDef;
+        reading.CarrierOrigin = origin == null ? null : ReadingOf(origin);
+        return reading;
+    }
+
+    private static string Render(Reading reading, string? ownerId)
+    {
+        string line = "入场 " + DescribeOne(reading, ownerId);
+        return reading.Carriers.Count == 0
+            ? line
+            : line + "；经 " + string.Join("←", reading.Carriers)
+                     + (reading.CarrierOrigin == null ? "" : "；" + reading.OriginCarrier + " 入场 " + DescribeOne(reading.CarrierOrigin, ownerId));
     }
 
     internal static IDisposable SimulateBetweenCases()
@@ -187,12 +226,16 @@ internal static class RimRunnerArrivalTag
         }
     }
 
-    private static string DescribeOne(Arrival arrival, string? ownerId)
+    private static string DescribeOne(Reading reading, string? ownerId)
     {
-        string window = arrival.CaseId == null ? "用例间"
-            : (arrival.CaseId == ownerId ? "" : arrival.CaseId + " ") + (arrival.Teardown ? "收尾" : "体内");
-        arrival.Caller ??= RimRunnerCallSite.Describe(arrival.Trace, CallerFrames, IsSpawnPlumbing) ?? "<来源?>";
-        return "tick " + arrival.Tick + " 于" + window + "←" + arrival.Caller;
+        string window = reading.WindowFor(ownerId) switch
+        {
+            Window.Between => "用例间",
+            Window.OtherCase => reading.CaseId + " " + (reading.Teardown ? "收尾" : "体内"),
+            Window.Teardown => "收尾",
+            _ => "体内",
+        };
+        return "tick " + reading.Tick + " 于" + window + "←" + reading.Source;
     }
 
     private static void Record(object key, object? carrier)

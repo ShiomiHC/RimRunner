@@ -164,32 +164,42 @@ internal static class RimRunnerLogAcks
         entry.logAcks = settled;
     }
 
-    internal static List<string> BroadClaims(RimRunnerResultEntry entry)
+    internal static List<AckBroadClaim> BroadClaims(RimRunnerResultEntry entry)
     {
         return BroadClaims(entry, RimRunnerSeenLogLedger.GeneratedPawnNames);
     }
 
-    internal static List<string> BroadClaims(RimRunnerResultEntry entry, IEnumerable<string> pawnNames)
+    internal readonly record struct AckBroadClaim(string Pattern, IReadOnlyList<string> Kinds)
     {
-        List<string> texts = [];
+        internal string Text(string caseId) =>
+            "用例 " + caseId + " 的日志许可「" + Pattern + "」本轮认领到 " + Kinds.Count + " 种正文（数字与本轮 pawn 名归一后）："
+            + string.Join(" / ", Kinds.Select(Clip));
+    }
+
+    internal static List<AckBroadClaim> BroadClaims(RimRunnerResultEntry entry, IEnumerable<string> pawnNames)
+    {
+        List<AckBroadClaim> claims = [];
         foreach (RimRunnerLogAckEntry cell in entry.logAcks)
         {
             List<string> kinds = cell.lines.Select(line => RimRunnerSeenLogLedger.ShapeOf(line, pawnNames))
                 .Distinct(StringComparer.Ordinal).ToList();
             if (kinds.Count <= 1) continue;
-            texts.Add("用例 " + entry.id + " 的日志许可「" + cell.pattern + "」本轮认领到 " + kinds.Count + " 种正文（数字与本轮 pawn 名归一后）："
-                      + string.Join(" / ", kinds.Select(Clip)));
+            claims.Add(new AckBroadClaim(cell.pattern, kinds));
         }
 
-        return texts;
+        return claims;
     }
 
-    internal static string FreshClaim(string caseId, RimRunnerLogAckEntry cell)
+    internal readonly record struct AckFreshClaim(string Pattern, IReadOnlyList<string> Lines)
     {
-        return "用例 " + caseId + " 的日志许可「" + cell.pattern + "」本轮认领到 " + cell.linesFresh.Count
-               + " 种本名单下此前各轮未认领过的正文（数字与本轮 pawn 名归一后）："
-               + string.Join(" / ", cell.linesFresh.Select(Clip));
+        internal string Text(string caseId) =>
+            "用例 " + caseId + " 的日志许可「" + Pattern + "」本轮认领到 " + Lines.Count
+            + " 种本名单下此前各轮未认领过的正文（数字与本轮 pawn 名归一后）："
+            + string.Join(" / ", Lines.Select(Clip));
     }
+
+    internal static AckFreshClaim FreshClaim(RimRunnerLogAckEntry cell) =>
+        new(cell.pattern, [.. cell.linesFresh]);
 
     private const int MaxListedChars = 120;
 

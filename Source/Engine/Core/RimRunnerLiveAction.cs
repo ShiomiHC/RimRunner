@@ -45,6 +45,9 @@ public sealed class RimRunnerLiveCall
         this.args = args;
     }
 
+    internal const string UnknownArgsLead = "未知参数：";
+    internal const string MissingRequiredLead = "缺少必填参数：";
+
     internal static string? ArgRefusal(string owner, IReadOnlyList<RimRunnerLiveParam> declared,
         IReadOnlyDictionary<string, string> args)
     {
@@ -52,13 +55,13 @@ public sealed class RimRunnerLiveCall
             .OrderBy(name => name, StringComparer.Ordinal).ToArray();
         if (unknown.Length > 0)
         {
-            return owner + " 未知参数：" + string.Join("、", unknown) + "。可用参数："
+            return owner + " " + UnknownArgsLead + string.Join("、", unknown) + "。可用参数："
                    + (declared.Count == 0 ? "无" : string.Join("、", declared.Select(param => param.Name)));
         }
 
         string[] missing = declared.Where(param => param.Required && !args.ContainsKey(param.Name))
             .Select(param => param.Name + "（" + param.Meaning + "）").ToArray();
-        return missing.Length > 0 ? owner + " 缺少必填参数：" + string.Join("、", missing) : null;
+        return missing.Length > 0 ? owner + " " + MissingRequiredLead + string.Join("、", missing) : null;
     }
 
     /// <summary>参数的原文；未指定为 null。</summary>

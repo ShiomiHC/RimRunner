@@ -3,6 +3,7 @@ namespace RimRunner;
 internal sealed class RimRunnerSceneOutcome
 {
     internal string? AbortLine;
+    internal RimRunnerClaimedFault.FaultKind? AbortKind;
     internal readonly List<RimRunnerAssertEntry> Warnings = [];
     internal readonly List<string> Messages = [];
 }
@@ -23,7 +24,7 @@ internal static class RimRunnerSceneRunner
             }
             catch (Exception exception)
             {
-                outcome.AbortLine = DescribeAbort(current.id, exception);
+                DescribeAbort(outcome, current.id, exception);
             }
         }
 
@@ -33,16 +34,18 @@ internal static class RimRunnerSceneRunner
         return outcome;
     }
 
-    private static string DescribeAbort(string showcaseId, Exception exception)
+    private static void DescribeAbort(RimRunnerSceneOutcome outcome, string showcaseId, Exception exception)
     {
         RimRunnerClaimedFault? fault = RimRunnerClaimedFault.Unwrap(exception);
         if (fault == null)
         {
             Log.Error(RimRunnerLog.Prefix + " 场面 " + showcaseId + " 执行时抛出异常：" + exception);
-            return "抛出异常：" + exception.GetType().Name + ": " + exception.Message;
+            outcome.AbortLine = "抛出异常：" + exception.GetType().Name + ": " + exception.Message;
+            return;
         }
 
-        return fault.Kind == RimRunnerClaimedFault.FaultKind.Precondition
+        outcome.AbortKind = fault.Kind;
+        outcome.AbortLine = fault.Kind == RimRunnerClaimedFault.FaultKind.Precondition
             ? "装配前提不成立：" + fault.Message
             : "本产品侧失败：" + fault.Message;
     }

@@ -3,34 +3,28 @@ using System.Text.Json;
 
 namespace RimRunnerCli;
 
-internal static class ObservationSignatures
+internal static class ObservationMarks
 {
+    internal const string FaultMark = "[观察故障]";
+
     public static void Report(string text, string? logPath, string productRoot, string command,
-        string? runId, TextWriter terminal, string? tablePath = null, string? hitLogPath = null)
+        string? runId, TextWriter terminal, string? hitLogPath = null)
     {
-        IReadOnlyList<(string Section, string Key)> table;
         try
         {
-            tablePath ??= TablePath();
-            if (tablePath == null) return;
-            table = ObservationCore.Load(tablePath);
+            hitLogPath = Destination(hitLogPath);
         }
-        catch (ObservationCore.SignatureException exception)
+        catch (StoreException exception)
         {
-            terminal.WriteLine($"{ObservationCore.FaultMark} {exception.Message}");
+            terminal.WriteLine($"{FaultMark} {exception.Message}");
             return;
         }
 
-        List<ObservationCore.Hit> hits = ObservationCore.Match(text, table);
-        foreach (ObservationCore.Hit hit in hits)
-        {
-            PrintHit(terminal, hit);
-        }
-
-        if (hits.Count == 0)
-        {
-            return;
-        }
+        if (hitLogPath == null) return;
+        List<ObservationHits.Hit> hits = ObservationHits.Match(text);
+        if (hits.Count == 0) return;
+        foreach (ObservationHits.Hit hit in hits)
+            terminal.WriteLine($"{ObservationHits.HitMark} {hit.Key} —— 日志命中 {hit.Lines} 行，首行：{hit.FirstLine}（不计入退出码）");
 
         string? pinned = logPath == null ? null : Pin(logPath, terminal.WriteLine);
         terminal.WriteLine(logPath == null
@@ -39,11 +33,11 @@ internal static class ObservationSignatures
 
         try
         {
-            AppendLog(hitLogPath ?? HitLogPath(), hits, pinned ?? logPath, productRoot, command, runId);
+            AppendLog(hitLogPath, hits, pinned ?? logPath, productRoot, command, runId);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            terminal.WriteLine($"{ObservationCore.FaultMark} 命中未记入 {hitLogPath ?? HitLogPath()}：{exception.Message}");
+            terminal.WriteLine($"{FaultMark} 命中未记入 {hitLogPath}：{exception.Message}");
         }
     }
 
@@ -51,13 +45,18 @@ internal static class ObservationSignatures
     {
         try
         {
-            return TablePath() != null;
+            return Declared();
         }
-        catch (ObservationCore.SignatureException)
+        catch (StoreException)
         {
             return false;
         }
     }
+
+    private static bool Declared() => EnginePackage.Locate().ReadManifest().Observations;
+
+    private static string? Destination(string? overridden) =>
+        overridden ?? (Declared() ? ObservationHits.LogPath(MachineRoot.Resolve()) : null);
 
     internal static void Mark(string key, string text)
     {
@@ -69,15 +68,11 @@ internal static class ObservationSignatures
         if (MarksEnabled()) write(RimRunner.RimRunnerObservationKeys.Line(key, text));
     }
 
-    private static void PrintHit(TextWriter terminal, ObservationCore.Hit hit) =>
-        terminal.WriteLine($"{ObservationCore.HitMark} {ObservationCore.LedgerFileName}「{hit.Section}」—— 日志命中 {hit.Lines} 行，"
-            + $"首行：{hit.FirstLine}（不计入退出码）");
-
     private static string? Pin(string logPath, Action<string> fault)
     {
         try
         {
-            string dir = Path.Combine(Path.GetDirectoryName(logPath)!, ObservationCore.PinnedSubDirName);
+            string dir = Path.Combine(Path.GetDirectoryName(logPath)!, ObservationHits.PinnedSubDirName);
             Directory.CreateDirectory(dir);
             string pinned = Path.Combine(dir, Path.GetFileName(logPath));
             using (var source = new FileStream(logPath, FileMode.Open, FileAccess.Read,
@@ -93,44 +88,30 @@ internal static class ObservationSignatures
         }
     }
 
-    internal static TailWatch? WatchTail(string productRoot, int number, string? tablePath = null,
-        string? hitLogPath = null)
+    internal static TailWatch? WatchTail(string productRoot, int number, string? hitLogPath = null) =>
+        Watch(productRoot, number, hitLogPath);
+
+    internal static TailWatch? WatchCoordinator(string? hitLogPath = null) => Watch(null, null, hitLogPath);
+
+    private static TailWatch? Watch(string? productRoot, int? number, string? hitLogPath)
     {
         try
         {
-            tablePath ??= TablePath();
-            if (tablePath == null) return null;
-            return new TailWatch(ObservationCore.Load(tablePath), hitLogPath ?? HitLogPath(), productRoot, number);
+            return Destination(hitLogPath) is { } destination ? new TailWatch(destination, productRoot, number) : null;
         }
-        catch (ObservationCore.SignatureException)
+        catch (StoreException)
         {
             return null;
         }
     }
 
-    internal static TailWatch? WatchCoordinator(string? tablePath = null, string? hitLogPath = null)
-    {
-        try
-        {
-            tablePath ??= TablePath();
-            if (tablePath == null) return null;
-            return new TailWatch(ObservationCore.Load(tablePath), hitLogPath ?? HitLogPath(), null, null);
-        }
-        catch (ObservationCore.SignatureException)
-        {
-            return null;
-        }
-    }
-
-    internal sealed class TailWatch(IReadOnlyList<(string Section, string Key)> table, string hitLogPath,
-        string? productRoot, int? number)
+    internal sealed class TailWatch(string hitLogPath, string? productRoot, int? number)
     {
         private readonly HashSet<string> recorded = new(StringComparer.Ordinal);
 
         internal IReadOnlyList<string> Lines(string logPath, string entries)
         {
-            List<ObservationCore.Hit> fresh =
-                [.. ObservationCore.Match(entries, table).Where(hit => recorded.Add(hit.Section))];
+            List<ObservationHits.Hit> fresh = [.. ObservationHits.Match(entries).Where(hit => recorded.Add(hit.Key))];
             if (fresh.Count == 0) return [];
             var faults = new List<string>();
             string? pinned = Pin(logPath, faults.Add);
@@ -143,8 +124,8 @@ internal static class ObservationSignatures
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                foreach (ObservationCore.Hit hit in fresh) recorded.Remove(hit.Section);
-                faults.Add($"{ObservationCore.FaultMark} 命中未记入 {hitLogPath}：{exception.Message}");
+                foreach (ObservationHits.Hit hit in fresh) recorded.Remove(hit.Key);
+                faults.Add($"{FaultMark} 命中未记入 {hitLogPath}：{exception.Message}");
             }
 
             return faults;
@@ -156,39 +137,14 @@ internal static class ObservationSignatures
         }
     }
 
-    internal static string? TablePath() =>
-        TablePath(EnginePackage.Locate(), CommandContext.GetEnvironmentVariable(IsolatedRoot.SignaturesVariable));
-
-    internal static string? TablePath(EnginePackage package, string? overridden)
-    {
-        if (!string.IsNullOrWhiteSpace(overridden))
-        {
-            return overridden;
-        }
-
-        PackageManifest manifest;
-        try
-        {
-            manifest = package.ReadManifest();
-        }
-        catch (StoreException exception)
-        {
-            throw new ObservationCore.SignatureException(exception.Message);
-        }
-
-        return manifest.Observations ? Path.Combine(package.ObservationsDir, ObservationCore.TableFileName) : null;
-    }
-
-    internal static string HitLogPath() => ObservationCore.HitLogPath(MachineRoot.Resolve());
-
-    private static void AppendLog(string path, List<ObservationCore.Hit> hits, string? logPath, string? productRoot,
+    private static void AppendLog(string path, List<ObservationHits.Hit> hits, string? logPath, string? productRoot,
         string? command, string? runId, int? number = null, bool coordinator = false)
     {
         var sb = new StringBuilder();
-        string at = DateTime.Now.ToString(ObservationCore.CursorFormat);
-        foreach (ObservationCore.Hit hit in hits)
+        string at = DateTime.Now.ToString(ObservationHits.TimeFormat);
+        foreach (ObservationHits.Hit hit in hits)
         {
-            var entry = new Dictionary<string, object?> { ["at"] = at, ["section"] = hit.Section };
+            var entry = new Dictionary<string, object?> { ["at"] = at, [ObservationHits.KeyField] = hit.Key };
             if (productRoot != null) entry["productRoot"] = productRoot;
             if (coordinator)
             {

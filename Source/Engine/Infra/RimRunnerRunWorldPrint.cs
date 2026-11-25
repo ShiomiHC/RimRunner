@@ -18,18 +18,29 @@ internal sealed class RimRunnerRunWorldPrint
         startTick = Find.TickManager?.TicksGame ?? 0;
     }
 
-    internal List<string> Close()
+    internal List<WorldNoteEntry> Close()
     {
         Dictionary<string, string> now = capture(mapIds);
         int endTick = Find.TickManager?.TicksGame ?? startTick;
-        return now.Select(pair => Drift(pair.Key, start.GetValueOrDefault(pair.Key), pair.Value, startTick, endTick))
-            .Where(line => line != null)
-            .Select(line => line!)
-            .OrderBy(line => line, StringComparer.Ordinal)
+        return now.Select(pair => Entry(pair.Key, start.GetValueOrDefault(pair.Key), pair.Value, startTick, endTick))
+            .Where(entry => entry != null)
+            .Select(entry => entry!)
+            .OrderBy(entry => entry.Text, StringComparer.Ordinal)
             .ToList();
     }
 
     internal static string? Drift(string key, string? before, string after, int startTick, int endTick)
+        => Entry(key, before, after, startTick, endTick)?.Text;
+
+    internal sealed class WorldNoteEntry(string key, string? before, string after)
+    {
+        internal readonly string Key = key;
+        internal readonly string? Before = before;
+        internal readonly string After = after;
+        internal string Text => Key + "：" + (Before ?? "无") + " → " + After;
+    }
+
+    internal static WorldNoteEntry? Entry(string key, string? before, string after, int startTick, int endTick)
     {
         if (before == after)
         {
@@ -41,17 +52,18 @@ internal sealed class RimRunnerRunWorldPrint
             return null;
         }
 
-        return key + "：" + (before ?? "无") + " → " + after;
+        return new WorldNoteEntry(key, before, after);
     }
 
     private static bool NaturalDrift(string key, string before, string after, int startTick, int endTick)
     {
-        if (key.StartsWith("世界条件 ", StringComparison.Ordinal) || key.Contains(" 条件 ", StringComparison.Ordinal))
+        if (key.StartsWith(RimRunnerWorldPrint.WorldConditionPrefix, StringComparison.Ordinal)
+            || key.Contains(RimRunnerWorldPrint.ConditionInfix, StringComparison.Ordinal))
         {
             return Count(before) > Count(after);
         }
 
-        if (key.StartsWith("派系 ", StringComparison.Ordinal)
+        if (key.StartsWith(RimRunnerWorldPrint.FactionPrefix, StringComparison.Ordinal)
             && endTick / ProximityGoodwillInterval > startTick / ProximityGoodwillInterval)
         {
             int cut = before.LastIndexOf(' ');

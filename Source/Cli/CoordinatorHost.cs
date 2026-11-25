@@ -33,7 +33,7 @@ internal sealed partial class CoordinatorHost : IDisposable
         this.taken = taken;
         pending = first;
         log = new CoordinatorLog(Path.Combine(MachineRoot.Resolve(), "orchestrator-log"), me.Build,
-            ObservationSignatures.WatchCoordinator());
+            ObservationMarks.WatchCoordinator());
     }
 
     internal static string PipeName => $"rimrunner-{OrchestratorPipe.User}-coordinator";

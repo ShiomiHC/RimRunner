@@ -4,6 +4,14 @@ namespace RimRunner;
 
 internal static class RimRunnerWorldPrint
 {
+    internal const string ResearchPrefix = "研究 ";
+    internal const string DiscoveryPrefix = "发现 ";
+    internal const string WorldConditionPrefix = "世界条件 ";
+    internal const string FactionPrefix = "派系 ";
+    internal const string WorldObjectPrefix = "世界物件 ";
+    internal const string MapConditionPrefix = "地图 ";
+    internal const string ConditionInfix = " 条件 ";
+
     internal static Dictionary<string, string> CaptureForScene()
     {
         var print = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -30,7 +38,7 @@ internal static class RimRunnerWorldPrint
                 continue;
             }
 
-            print["世界物件 " + worldObject.GetUniqueLoadID()] = worldObject.def.defName + " "
+            print[WorldObjectPrefix + worldObject.GetUniqueLoadID()] = worldObject.def.defName + " "
                 + (worldObject.Faction == null ? "无派系" : worldObject.Faction.def.defName);
         }
 
@@ -62,7 +70,7 @@ internal static class RimRunnerWorldPrint
             float progress = Find.ResearchManager.GetProgress(project);
             if (progress > 0f)
             {
-                print["研究 " + project.defName] = "进度 " + progress.ToString("0.###");
+                print[ResearchPrefix + project.defName] = "进度 " + progress.ToString("0.###");
             }
         }
 
@@ -70,19 +78,19 @@ internal static class RimRunnerWorldPrint
         {
             if (def.hiddenWhileUndiscovered && !Find.HiddenItemsManager.Hidden(def))
             {
-                print["发现 " + def.defName] = "已发现";
+                print[DiscoveryPrefix + def.defName] = "已发现";
             }
         }
     }
 
     private static void CaptureConditions(Dictionary<string, string> print, IReadOnlyCollection<int>? mapIds)
     {
-        CountConditions(print, "世界条件 ", Find.World.gameConditionManager);
+        CountConditions(print, WorldConditionPrefix, Find.World.gameConditionManager);
         foreach (Map map in Find.Maps)
         {
             if (mapIds == null || mapIds.Contains(map.uniqueID))
             {
-                CountConditions(print, "地图 " + map.uniqueID + " 条件 ", map.gameConditionManager);
+                CountConditions(print, MapConditionPrefix + map.uniqueID + ConditionInfix, map.gameConditionManager);
             }
         }
     }
@@ -92,7 +100,7 @@ internal static class RimRunnerWorldPrint
         foreach (Faction faction in Find.FactionManager.AllFactionsListForReading
                      .Where(faction => !faction.IsPlayer && !faction.Hidden))
         {
-            print["派系 " + faction.GetUniqueLoadID()] = faction.PlayerRelationKind + " " + faction.PlayerGoodwill;
+            print[FactionPrefix + faction.GetUniqueLoadID()] = faction.PlayerRelationKind + " " + faction.PlayerGoodwill;
         }
     }
 

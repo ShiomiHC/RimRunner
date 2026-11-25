@@ -175,10 +175,12 @@ public static class RimRunnerInput
         }
     }
 
+    internal const int HashLength = 12;
+
     private static string Hash(string text)
     {
         using SHA256 sha = SHA256.Create();
-        return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(text)).Take(6).Select(b => b.ToString("x2")));
+        return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(text)).Take(HashLength / 2).Select(b => b.ToString("x2")));
     }
 }
 

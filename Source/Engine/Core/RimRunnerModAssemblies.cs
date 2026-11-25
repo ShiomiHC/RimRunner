@@ -207,12 +207,16 @@ internal static class RimRunnerModAssemblies
         };
     }
 
+    internal const string NotLoadedLead = "未能装入：";
+    internal const string NotLoadedErrorLead = "；装载错误级日志：";
+    internal const string NotLoadedWithoutError = "；无法获取装载错误级日志";
+
     internal static string Describe(Ejection ejection, string who)
     {
         if (ejection.NotLoaded)
         {
-            return who + "未能装入：" + string.Join("、", ejection.Missing)
-                   + (ejection.Error == null ? "；无法获取装载错误级日志" : "；装载错误级日志：" + ejection.Error);
+            return who + NotLoadedLead + string.Join("、", ejection.Missing)
+                   + (ejection.Error == null ? NotLoadedWithoutError : NotLoadedErrorLead + ejection.Error);
         }
 
         return who + "程序集 " + ejection.Assembly + " 被剔除：在进程内，不在该 mod 的 loadedAssemblies";

@@ -2,6 +2,13 @@ namespace RimRunner;
 
 internal sealed class RimRunnerRunWorldTally
 {
+    internal enum Status
+    {
+        Compared,
+        Missed,
+        Unentered
+    }
+
     private readonly HashSet<string> eligible = new(StringComparer.Ordinal);
     private readonly HashSet<string> compared = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> missed = new(StringComparer.Ordinal);
@@ -43,9 +50,16 @@ internal sealed class RimRunnerRunWorldTally
         }
     }
 
+    internal int ComparedCount => order.Count(compared.Contains);
+
+    internal Status StatusOf(string id) =>
+        compared.Contains(id) ? Status.Compared
+        : missed.ContainsKey(id) ? Status.Missed
+        : Status.Unentered;
+
     internal IEnumerable<(bool warn, string text)> Lines()
     {
-        yield return (false, "世界层已比对 " + order.Count(compared.Contains) + " 条用例");
+        yield return (false, "世界层已比对 " + ComparedCount + " 条用例");
         foreach (string id in order.Where(id => !compared.Contains(id)))
         {
             yield return (true, missed.TryGetValue(id, out string? reason)

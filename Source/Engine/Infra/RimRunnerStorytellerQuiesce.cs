@@ -12,7 +12,7 @@ internal static class RimRunnerStorytellerQuiesce
     private const int CallerFrames = 2;
     private const int LogFrames = 8;
 
-    private static readonly List<string> pendingBetween = [];
+    private static readonly List<BetweenClear> pendingBetween = [];
 
     private sealed class Enqueue
     {
@@ -20,6 +20,35 @@ internal static class RimRunnerStorytellerQuiesce
         public bool Teardown;
         public required string Caller;
         public required string Stack;
+    }
+
+    internal sealed class ClearedIncident
+    {
+        internal bool Recorded;
+        internal required string DefName;
+        internal string? CaseId;
+        internal bool Teardown;
+        internal required string Caller;
+
+        internal string Window(string? ownerId) =>
+            !Recorded ? "?"
+            : CaseId == null ? "用例间"
+            : (CaseId == ownerId ? "" : CaseId + " ") + (Teardown ? "收尾" : "体内");
+
+        internal string Text(string? ownerId) => DefName + " 于" + Window(ownerId) + "入队←" + Caller;
+    }
+
+    internal sealed class BetweenClear
+    {
+        internal required ClearedIncident Incident;
+        internal string? WindowOwner;
+        internal required string ClearedAt;
+        internal bool AtStart;
+        internal bool TeardownMissed;
+
+        internal string Text => "叙事者队列：" + Incident.Text(WindowOwner) + "，" + ClearedAt
+                                + (AtStart ? " 开始执行时清除" : " 收尾时清除")
+                                + (TeardownMissed ? "（入队用例收尾未清出）" : "");
     }
 
     internal static bool HoldsFiring(IncidentQueue queue) =>
@@ -72,9 +101,15 @@ internal static class RimRunnerStorytellerQuiesce
         {
             foreach (QueuedIncident queued in installed)
             {
-                string line = DescribeAndLog(queued, null, out Enqueue? record);
-                pendingBetween.Add("叙事者队列：" + line + "，" + clearedAt + " 开始执行时清除"
-                                   + (record?.CaseId == null ? "" : "（入队用例收尾未清出）"));
+                ClearedIncident incident = DescribeAndLog(queued, null);
+                pendingBetween.Add(new BetweenClear
+                {
+                    Incident = incident,
+                    WindowOwner = null,
+                    ClearedAt = clearedAt,
+                    AtStart = true,
+                    TeardownMissed = incident.CaseId != null
+                });
             }
 
             installed.Clear();
@@ -95,9 +130,9 @@ internal static class RimRunnerStorytellerQuiesce
         }
     }
 
-    internal static List<string> DrainQueued(string ownerId)
+    internal static List<ClearedIncident> DrainQueued(string ownerId)
     {
-        var drained = new List<string>();
+        var drained = new List<ClearedIncident>();
         IncidentQueue? queue = Find.Storyteller?.incidentQueue;
         if (queue == null || !ReferenceEquals(queue, installed) || queue.Count == 0)
         {
@@ -106,14 +141,20 @@ internal static class RimRunnerStorytellerQuiesce
 
         foreach (QueuedIncident queued in queue)
         {
-            string line = DescribeAndLog(queued, ownerId, out Enqueue? record);
-            if (record != null && record.CaseId == null)
+            ClearedIncident incident = DescribeAndLog(queued, ownerId);
+            if (incident.Recorded && incident.CaseId == null)
             {
-                pendingBetween.Add("叙事者队列：" + line + "，" + ownerId + " 收尾时清除");
+                pendingBetween.Add(new BetweenClear
+                {
+                    Incident = incident,
+                    WindowOwner = ownerId,
+                    ClearedAt = ownerId,
+                    AtStart = false
+                });
             }
             else
             {
-                drained.Add(line);
+                drained.Add(incident);
             }
         }
 
@@ -123,10 +164,11 @@ internal static class RimRunnerStorytellerQuiesce
         return drained;
     }
 
-    internal static void DrainBetween(List<string> sink)
+    internal static List<BetweenClear> DrainBetween()
     {
-        sink.AddRange(pendingBetween);
+        List<BetweenClear> drained = [.. pendingBetween];
         pendingBetween.Clear();
+        return drained;
     }
 
     internal static void NoteHeldDue(List<QueuedIncident> queued)
@@ -141,31 +183,49 @@ internal static class RimRunnerStorytellerQuiesce
         }
     }
 
-    internal static string Fate(QueuedIncident queued)
+    internal enum FateKind
     {
-        int now = Find.TickManager?.TicksGame ?? -1;
-        return heldDue.Contains(queued) ? "被扣住未发"
-            : queued.FireTick > now ? "清出时未到期"
-            : "到期后未再推 tick";
+        HeldDue,
+        NotYetDue,
+        NoTickSinceDue
     }
 
-    private static string DescribeAndLog(QueuedIncident queued, string? ownerId, out Enqueue? record)
+    internal static FateKind Fate(QueuedIncident queued)
+    {
+        int now = Find.TickManager?.TicksGame ?? -1;
+        return heldDue.Contains(queued) ? FateKind.HeldDue
+            : queued.FireTick > now ? FateKind.NotYetDue
+            : FateKind.NoTickSinceDue;
+    }
+
+    private static string FateText(FateKind fate) => fate switch
+    {
+        FateKind.HeldDue => "被扣住未发",
+        FateKind.NotYetDue => "清出时未到期",
+        _ => "到期后未再推 tick"
+    };
+
+    private static ClearedIncident DescribeAndLog(QueuedIncident queued, string? ownerId)
     {
         string def = queued.FiringIncident?.def?.defName ?? "<def?>";
-        enqueuedBy.TryGetValue(queued, out record);
-        string window = record == null ? "?"
-            : record.CaseId == null ? "用例间"
-            : (record.CaseId == ownerId ? "" : record.CaseId + " ") + (record.Teardown ? "收尾" : "体内");
+        bool recorded = enqueuedBy.TryGetValue(queued, out Enqueue? record);
+        var incident = new ClearedIncident
+        {
+            Recorded = recorded,
+            DefName = def,
+            CaseId = record?.CaseId,
+            Teardown = record != null && record.Teardown,
+            Caller = record?.Caller ?? "<入队方?>"
+        };
         int now = Find.TickManager?.TicksGame ?? -1;
-        string line = def + " 于" + window + "入队←" + (record?.Caller ?? "<入队方?>");
 
         RimRunnerEngineLog.Info("叙事者队列清除：" + def
-                                + " fireTick=" + queued.FireTick + "（现 " + now + "）" + Fate(queued)
+                                + " fireTick=" + queued.FireTick + "（现 " + now + "）" + FateText(Fate(queued))
                                 + " retry=" + queued.RetryDurationTicks
                                 + " triedToFire=" + queued.TriedToFire
                                 + " target=" + DescribeTarget(queued.FiringIncident?.parms?.target)
-                                + " 入队窗=" + window + " 栈=" + (record?.Stack ?? "<未记>"));
-        return line;
+                                + " 入队窗=" + incident.Window(ownerId) + " 栈=" + (record?.Stack ?? "<未记>"));
+        return incident;
     }
 
     private static string DescribeTarget(IIncidentTarget? target) => target switch

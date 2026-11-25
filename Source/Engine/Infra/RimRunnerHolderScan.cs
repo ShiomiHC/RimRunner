@@ -42,6 +42,7 @@ internal static class RimRunnerHolderScan
     internal const string DirectKeyHead = "D ";
     internal const string ChainKeyHead = "C ";
     internal const string Hop = " → ";
+    internal const string RootSeparator = "::";
 
     private static readonly Dictionary<Type, FieldInfo[]> FieldCache = [];
 
@@ -202,8 +203,8 @@ internal static class RimRunnerHolderScan
             else
             {
                 text.Append("；其余 ").Append(rest).Append(" 个两段都未到达，").Append(caseBodyLive
-                    ? "持有者是用例体的局部状态，或扫描不读的根（" + UnreadRoots + "）"
-                    : "用例体已返回，持有者在扫描不读的根上（" + UnreadRoots + "）");
+                    ? RestLiveWay + "（" + UnreadRoots + "）"
+                    : RestReturnedWay + "（" + UnreadRoots + "）");
             }
         }
 
@@ -233,6 +234,9 @@ internal static class RimRunnerHolderScan
     internal static readonly string CleanupHops = "cleanupScope" + Hop + "actions" + Hop + "[*]";
 
     private const string UnreadRoots = "只在泛型方法里实例化的泛型类静态字段、别的线程的线程静态字段、原生句柄";
+
+    internal const string RestLiveWay = "持有者是用例体的局部状态，或扫描不读的根";
+    internal const string RestReturnedWay = "用例体已返回，持有者在扫描不读的根上";
 
     private static Dictionary<string, FieldInfo>? staticRootFields;
 
@@ -272,7 +276,7 @@ internal static class RimRunnerHolderScan
         {
             if (!field.IsLiteral && MayHoldReference(field.FieldType) && !field.FieldType.ContainsGenericParameters)
             {
-                fields[RimRunnerGenericCensus.Friendly(type) + "::" + field.Name] = field;
+                fields[RimRunnerGenericCensus.Friendly(type) + RootSeparator + field.Name] = field;
             }
         }
     }

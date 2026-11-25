@@ -4,9 +4,20 @@ using System.IO;
 
 namespace RimRunner;
 
+internal enum FocusGoneKind
+{
+    Held,
+    Destroyed,
+    NotOnMap,
+}
+
+internal sealed record FocusGoneFault(FocusGoneKind Kind, string FocusId, string? HolderId);
+
 public static partial class RimRunnerSession
 {
     private const string CheckpointSaveName = "RimRunnerCheckpoint";
+
+    internal const string ReentryRefusedReason = "拒绝重入运行";
     private static RunContinuation? continuation;
 
     private static RunContinuation InRun => continuation!;
@@ -34,7 +45,7 @@ public static partial class RimRunnerSession
         if (!RimRunnerRunCoordinator.TryStart(
                 command, resolvedRunId, out RimRunnerRunSnapshot activeRun))
         {
-            RimRunnerEngineLog.Warn("拒绝重入运行：requested=" + command
+            RimRunnerEngineLog.Warn(ReentryRefusedReason + "：requested=" + command
                                     + "/" + resolvedRunId + " active=" + activeRun.State + "/"
                                     + activeRun.Command + "/" + activeRun.RunId);
             return;
@@ -620,7 +631,7 @@ public static partial class RimRunnerSession
 
     private static void ObserveHandoffsAfterCurrentPhase()
     {
-        string window = InRun.CurrentCaseId + " phase " + InRun.NextPhase + " 之后";
+        string window = RimRunnerHandoffFingerprint.WindowLabel(InRun.CurrentCaseId, InRun.NextPhase);
         foreach (CheckpointBatchMember member in HoldingMembers())
         {
             RimRunnerHandoffFingerprint.Observe(member.HandoffReadings, member.CheckpointState, window, true,
@@ -791,7 +802,7 @@ public static partial class RimRunnerSession
             Members = members
         };
         return RequeueOverBudget(testCase,
-            RimRunnerCheckpointPlanner.BatchRedRetried(testCase.Id, firstRed, drift, members));
+            RimRunnerCheckpointPlanner.Describe(RimRunnerCheckpointPlanner.BatchRedRetried(testCase.Id, firstRed, drift, members)));
     }
 
     private static void SettleBatchRedRetry(RimRunnerTestCase testCase)
@@ -804,9 +815,10 @@ public static partial class RimRunnerSession
         InRun.BatchRedRetries.Remove(testCase.Id);
         if (!IsRed(InRun.CurrentEntry!) && !InRun.CurrentEntry!.endedByClaimedFault)
         {
-            InRun.CurrentEntry.sentinelFaults.Add(RimRunnerFindingEntry.Of(null, null, RimRunnerCheckpointPlanner.BatchRedSoloGreen(testCase.Id,
-                evidence.FirstRed, evidence.ClockDrift, CurrentPhaseClockDrift(), testCase.OnIsolatedMap,
-                evidence.Members)));
+            InRun.CurrentEntry.sentinelFaults.Add(RimRunnerFindingEntry.Of(null, null, RimRunnerCheckpointPlanner.Describe(
+                RimRunnerCheckpointPlanner.BatchRedSoloGreen(testCase.Id,
+                    evidence.FirstRed, evidence.ClockDrift, CurrentPhaseClockDrift(), testCase.OnIsolatedMap,
+                    evidence.Members))));
         }
     }
 
@@ -943,6 +955,8 @@ public static partial class RimRunnerSession
         }
     }
 
+    internal static string CaseWindowOwner(string caseId) => "用例 " + caseId;
+
     private static bool ExecuteCurrentPhase(RimRunnerTestCase testCase)
     {
         if (InRun.NextPhase == 0 && testCase.Level == RimRunnerLevel.World)
@@ -951,7 +965,7 @@ public static partial class RimRunnerSession
         }
 
         RimRunnerLogCapture capture = RimRunnerLogMonitor.Snapshot(includeWarnings: true,
-            owner: "用例 " + testCase.Id + (testCase is IRimRunnerPhasedCase ? " phase " + InRun.NextPhase : ""),
+            owner: CaseWindowOwner(testCase.Id) + (testCase is IRimRunnerPhasedCase ? " phase " + InRun.NextPhase : ""),
             ackCase: testCase);
         RimRunnerSustainedErrorBreaker.Arm(capture);
         RimRunnerStubProbe.Open(testCase.Id);
@@ -1348,7 +1362,8 @@ public static partial class RimRunnerSession
         {
             RimRunnerScreenshotRequest request = pending.Requests[pending.Index];
             RimRunnerScreenshotArtifact? artifact = null;
-            string? error = FocusGoneError(request.Crop);
+            FocusGoneFault? gone = FocusGoneError(request.Crop);
+            string? error = gone == null ? null : DescribeFocusGone(gone);
             try
             {
                 if (error == null && RimRunnerScreenshotDriver.TryQueueFocused(
@@ -1399,7 +1414,7 @@ public static partial class RimRunnerSession
         return true;
     }
 
-    internal static string? FocusGoneError(RimRunnerCropSpec crop)
+    internal static FocusGoneFault? FocusGoneError(RimRunnerCropSpec crop)
     {
         foreach (Thing focus in crop.Things)
         {
@@ -1411,15 +1426,26 @@ public static partial class RimRunnerSession
             Thing holder = focus.SpawnedParentOrMe;
             if (holder != null)
             {
-                return focus.ThingID + " 在 phase 返回时不在图上、在 " + holder.ThingID + " 里，未出图";
+                return new FocusGoneFault(FocusGoneKind.Held, focus.ThingID, holder.ThingID);
             }
 
-            return focus.Destroyed
-                ? focus.ThingID + " 在 phase 返回时已销毁（早于 Defer 清理），未出图"
-                : focus.ThingID + " 在 phase 返回时不在任何地图上，未出图";
+            return new FocusGoneFault(focus.Destroyed ? FocusGoneKind.Destroyed : FocusGoneKind.NotOnMap,
+                focus.ThingID, null);
         }
 
         return null;
+    }
+
+    private static string DescribeFocusGone(FocusGoneFault fault)
+    {
+        return fault.Kind switch
+        {
+            FocusGoneKind.Held =>
+                fault.FocusId + " 在 phase 返回时不在图上、在 " + fault.HolderId + " 里，未出图",
+            FocusGoneKind.Destroyed =>
+                fault.FocusId + " 在 phase 返回时已销毁（早于 Defer 清理），未出图",
+            _ => fault.FocusId + " 在 phase 返回时不在任何地图上，未出图",
+        };
     }
 
     private static void FinalizePhase(
@@ -1965,11 +1991,14 @@ public static partial class RimRunnerSession
                && SaveIntegrityWarnings.Any(text => line.IndexOf(text, StringComparison.Ordinal) >= 0);
     }
 
+    internal const string VersionFromFragment = "is from version ";
+    internal const string VersionRunningFragment = ", we are running version ";
+
     internal static bool IsBenignSaveWindowWarning(string? line)
     {
         return line != null
-               && line.IndexOf("is from version ", StringComparison.Ordinal) >= 0
-               && line.IndexOf(", we are running version ", StringComparison.Ordinal) >= 0;
+               && line.IndexOf(VersionFromFragment, StringComparison.Ordinal) >= 0
+               && line.IndexOf(VersionRunningFragment, StringComparison.Ordinal) >= 0;
     }
 
     private static string DescribeSaveWindowWarning(string line)
@@ -2174,14 +2203,14 @@ public static partial class RimRunnerSession
         }
 
         RimRunnerLogAcks.Settle(entry, LogAcksOf(entry.id));
-        foreach (string broad in RimRunnerLogAcks.BroadClaims(entry))
+        foreach (RimRunnerLogAcks.AckBroadClaim broad in RimRunnerLogAcks.BroadClaims(entry))
         {
-            AddRuntimeWarning(entry, RimRunnerWarningKey.AckBroad, broad);
+            AddRuntimeWarning(entry, RimRunnerWarningKey.AckBroad, broad.Text(entry.id));
         }
 
-        foreach (string fresh in RimRunnerSeenLogLedger.AnnotateAcks(entry))
+        foreach (RimRunnerLogAcks.AckFreshClaim fresh in RimRunnerSeenLogLedger.AnnotateAcks(entry))
         {
-            AddRuntimeWarning(entry, RimRunnerWarningKey.AckBroad, fresh);
+            AddRuntimeWarning(entry, RimRunnerWarningKey.AckBroad, fresh.Text(entry.id));
         }
 
         if (RanToEnd(entry)
@@ -2203,9 +2232,8 @@ public static partial class RimRunnerSession
         foreach (string line in between)
             AddBatchWarning(RimRunnerWarningKey.StrayWindow, line);
         between.Clear();
-        RimRunnerStorytellerQuiesce.DrainBetween(between);
-        foreach (string line in between)
-            AddBatchWarning(RimRunnerWarningKey.StorytellerResidue, line);
+        foreach (RimRunnerStorytellerQuiesce.BetweenClear clear in RimRunnerStorytellerQuiesce.DrainBetween())
+            AddBatchWarning(RimRunnerWarningKey.StorytellerResidue, clear.Text);
         DrainProbeHits(entry);
         RimRunnerWindowWatch.DrainAmbient(InRun.Report.ambientWindows, InRun.Report.ambientWindowsFresh);
 
@@ -2705,15 +2733,17 @@ public static partial class RimRunnerSession
         }
         finally
         {
-            List<string> lines = RimRunnerDanglingRefProbe.Disarm();
+            RimRunnerDanglingRefProbe.Reading reading = RimRunnerDanglingRefProbe.Disarm();
             if (failure != null)
             {
                 AddBatchEngineFault(completed.Report,
                     "全批执行完后的悬空引用清扫存档失败：" + failure);
             }
-            else if (lines.Count > 0)
+            else
             {
-                completed.Report.batchSentinels.AddRange(lines.Select(line => RimRunnerFindingEntry.Of(null, line,
+                completed.Report.batchSentinels.AddRange(reading.Faults.Select(fault =>
+                    RimRunnerFindingEntry.Of(null, fault, RimRunnerDanglingRefProbe.FaultReason)));
+                completed.Report.batchSentinels.AddRange(reading.Detections.Select(line => RimRunnerFindingEntry.Of(null, line,
                     "全批执行完后仍有悬空引用（载入存档时会丢弃这些引用）。检查的是整轮累积状态")));
             }
 

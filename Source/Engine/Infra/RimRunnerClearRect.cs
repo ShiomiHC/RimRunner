@@ -17,20 +17,41 @@ public static class RimRunnerClearRect
     public static CellRect Find(Map map, int width, int height, IntVec3? near = null,
         Func<IntVec3, bool>? cellFilter = null, Func<CellRect, bool>? rectFilter = null, bool ignorePlantsAndFilth = false)
     {
-        CellRect found = Search(map, width, height, near, cellFilter, rectFilter, ignorePlantsAndFilth, out string? failure);
+        CellRect found = Search(map, width, height, near, cellFilter, rectFilter, ignorePlantsAndFilth, out Failure? failure);
         if (failure != null)
         {
-            RimRunnerFault.Require(false, NoRectReason, failure);
-            throw new InvalidOperationException(failure);
+            RimRunnerFault.Require(false, NoRectReason, failure.Text);
+            throw new InvalidOperationException(failure.Text);
         }
 
         return found;
     }
 
     internal const string NoRectReason = "找不到空矩形";
+    internal const string RectFilterLabel = "不满足调用方整块判据";
+
+    internal enum FailureKind
+    {
+        TooLarge,
+        NoCandidate,
+    }
+
+    internal sealed class Failure
+    {
+        internal FailureKind Kind;
+        internal required string Head;
+        internal IntVec3 Origin;
+        internal int Candidates;
+        internal RimRunnerCellBlockers? Blockers;
+
+        internal string Text => Kind == FailureKind.TooLarge
+            ? Head + "：图比矩形小"
+            : Head + "：中心 " + Origin + "，界内位置 " + Candidates + " 处，无一合格"
+              + (Blockers?.Describe() is { Length: > 0 } described ? "。" + described : "");
+    }
 
     internal static CellRect Search(Map map, int width, int height, IntVec3? near,
-        Func<IntVec3, bool>? cellFilter, Func<CellRect, bool>? rectFilter, bool ignorePlantsAndFilth, out string? failure)
+        Func<IntVec3, bool>? cellFilter, Func<CellRect, bool>? rectFilter, bool ignorePlantsAndFilth, out Failure? failure)
     {
         if (map == null)
         {
@@ -47,7 +68,7 @@ public static class RimRunnerClearRect
         string head = RimRunnerCellBlockers.MapLabel(map) + " 上找不到 " + width + "×" + height + " 的空矩形";
         if (width > sizeX || height > sizeZ)
         {
-            failure = head + "：图比矩形小";
+            failure = new Failure { Kind = FailureKind.TooLarge, Head = head };
             return default;
         }
 
@@ -105,10 +126,15 @@ public static class RimRunnerClearRect
             }
         }
 
-        blockers.AddPlacements("不满足调用方整块判据", rejected);
-        string described = blockers.Describe();
-        failure = head + "：中心 " + origin + "，界内位置 " + candidates.Count + " 处，无一合格"
-                  + (described.Length == 0 ? "" : "。" + described);
+        blockers.AddPlacements(RectFilterLabel, rejected);
+        failure = new Failure
+        {
+            Kind = FailureKind.NoCandidate,
+            Head = head,
+            Origin = origin,
+            Candidates = candidates.Count,
+            Blockers = blockers,
+        };
         return default;
     }
 

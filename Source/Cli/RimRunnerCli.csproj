@@ -47,7 +47,6 @@
     <Compile Include="..\Engine\Core\RimRunnerPipeWatchdog.cs" Link="Engine\RimRunnerPipeWatchdog.cs" />
     <Compile Include="..\Engine\Core\RimRunnerPipeProtocol.cs" Link="Engine\RimRunnerPipeProtocol.cs" />
     <Compile Include="..\Engine\Core\RimRunnerOutputPath.cs" Link="Engine\RimRunnerOutputPath.cs" />
-    <Compile Include="..\Observe\ObservationCore.cs" Link="Observe\ObservationCore.cs" />
   </ItemGroup>
 
   <ItemGroup>

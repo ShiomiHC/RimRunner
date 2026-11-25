@@ -12,7 +12,7 @@ internal sealed class RimRunnerCellBlockers
         CellPredicate
     }
 
-    private enum Origin
+    internal enum Origin
     {
         DuringCase,
         AtCaseStart,
@@ -70,6 +70,13 @@ internal sealed class RimRunnerCellBlockers
 
     internal static string MapLabel(Map map)
         => (RimRunnerContext.Active?.BaselineLabelOf(map) ?? map.ToString()) + " " + map.Size.x + "×" + map.Size.z;
+
+    internal int CellsOf(Reason reason) => cells.TryGetValue(reason, out int count) ? count : 0;
+
+    internal IReadOnlyDictionary<string, int> ThingCells(Origin origin) =>
+        thingDefs.TryGetValue(origin, out Dictionary<string, int>? defs) ? defs : [];
+
+    internal IReadOnlyList<(string Label, int Count)> Placements => placements;
 
     internal string Describe()
     {

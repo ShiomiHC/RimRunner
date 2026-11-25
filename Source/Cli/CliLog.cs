@@ -8,7 +8,7 @@ internal sealed class CliLog : IEngineLogSink
     internal const string ScreenMark = "屏";
     internal const string InfoMark = "记";
     internal const string EngineMark = "引";
-    internal const string Extension = ObservationCore.LogExtension;
+    internal const string Extension = ObservationHits.LogExtension;
     internal const string WarnTag = "[WARN] ";
     internal const string ErrorTag = "[ERROR] ";
     private const string FaultMark = "[日志故障]";
@@ -69,7 +69,6 @@ internal sealed class CliLog : IEngineLogSink
 
     internal bool ShowsPath => command != null || pointedAtLog;
 
-    internal string? SignatureTable { get; init; }
     internal string? HitLog { get; init; }
     internal string? MachineDir { get; init; }
 
@@ -356,8 +355,7 @@ internal sealed class CliLog : IEngineLogSink
         }
 
         foreach ((InstanceLink link, IEngineLogSink sink, string? lineTag) in followed) HandOver(link, sink, lineTag, path);
-        ObservationSignatures.Report(all, path, productRoot, command, RunIdIn(all), terminal,
-            SignatureTable, HitLog);
+        ObservationMarks.Report(all, path, productRoot, command, RunIdIn(all), terminal, HitLog);
         return path;
     }
 
@@ -369,9 +367,9 @@ internal sealed class CliLog : IEngineLogSink
             return;
         }
 
-        ObservationSignatures.TailWatch? watch = productRoot == null
+        ObservationMarks.TailWatch? watch = productRoot == null
             ? null
-            : ObservationSignatures.WatchTail(productRoot, link.Number, SignatureTable, HitLog);
+            : ObservationMarks.WatchTail(productRoot, link.Number, HitLog);
         link.Unfollow(sink, () =>
         {
             string pending;
@@ -440,7 +438,7 @@ internal sealed class CliLog : IEngineLogSink
     {
         if (group != null) return;
         foreach ((string text, int times) in ScreenRepeats())
-            ObservationSignatures.Mark(RimRunner.RimRunnerObservationKeys.ScreenRepeat, $"同一行上屏 {times} 次：{text}", LogOnlyLine);
+            ObservationMarks.Mark(RimRunner.RimRunnerObservationKeys.ScreenRepeat, $"同一行上屏 {times} 次：{text}", LogOnlyLine);
     }
 
     private void RecordTagged(string mark, string line, string lineTag)

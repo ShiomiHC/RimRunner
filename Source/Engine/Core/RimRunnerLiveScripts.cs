@@ -10,6 +10,14 @@ internal static class RimRunnerLiveScripts
 
     private static readonly Dictionary<string, Assembly> Loaded = new(StringComparer.Ordinal);
 
+    internal const string ConditionAsAction = "为条件，live do 不受理";
+    internal const string ActionAsCondition = "为动作，live until 不受理";
+
+    internal const string PrimitiveNameTaken = "与内置原语重名";
+
+    internal static string KindMismatch(string fullName, bool condition) =>
+        "脚本里的 " + fullName + " " + (condition ? ConditionAsAction : ActionAsCondition);
+
     internal static T? Instantiate<T>(byte[] image, string name, out string? fault) where T : class
     {
         object? instance = InstantiateAny(image, name, out fault);
@@ -18,9 +26,7 @@ internal static class RimRunnerLiveScripts
             return instance as T;
         }
 
-        fault = "脚本里的 " + instance.GetType().FullName + " 为" + (instance is RimRunnerLiveCondition
-            ? "条件，live do 不受理"
-            : "动作，live until 不受理");
+        fault = KindMismatch(instance.GetType().FullName ?? "", instance is RimRunnerLiveCondition);
         return null;
     }
 
@@ -69,7 +75,7 @@ internal static class RimRunnerLiveScripts
         }
 
         string id;
-        List<(string? Id, string Text)> faults;
+        List<LiveScriptFault> faults;
         if (instance is RimRunnerLiveAction action)
         {
             action.ScriptName = name;
@@ -117,28 +123,40 @@ internal static class RimRunnerLiveScripts
         return exception.GetType().Name + "：" + exception.Message;
     }
 
-    internal static List<(string? Id, string Text)> ActionFaults(IReadOnlyList<RimRunnerLiveAction> actions)
+    internal enum LiveScriptFaultKind
     {
-        var faults = new List<(string? Id, string Text)>();
+        IdInvalid,
+        IdDuplicate,
+        ParamNameInvalid,
+        ParamNameDuplicate,
+        PrimitiveNameTaken,
+        ConditionReservedParam,
+    }
+
+    internal readonly record struct LiveScriptFault(string? Id, LiveScriptFaultKind Kind, string Text);
+
+    internal static List<LiveScriptFault> ActionFaults(IReadOnlyList<RimRunnerLiveAction> actions)
+    {
+        var faults = new List<LiveScriptFault>();
         foreach (RimRunnerLiveAction action in actions)
         {
             string name = action.GetType().Name;
             if (string.IsNullOrWhiteSpace(action.Id) || action.Id.Any(char.IsWhiteSpace) || action.Id.Contains('='))
             {
-                faults.Add((null, name + " 的 Id 为空或含空白、=：「" + action.Id + "」"));
+                faults.Add(new(null, LiveScriptFaultKind.IdInvalid, name + " 的 Id 为空或含空白、=：「" + action.Id + "」"));
                 continue;
             }
 
             string id = action.Id;
             if (actions.Count(other => other.Id == id) > 1)
             {
-                faults.Add((id, "动作 Id " + id + " 重复：" + string.Join("、", actions.Where(other => other.Id == id)
+                faults.Add(new(id, LiveScriptFaultKind.IdDuplicate, "动作 Id " + id + " 重复：" + string.Join("、", actions.Where(other => other.Id == id)
                     .Select(other => other.GetType().Name))));
             }
 
             if (RimRunnerDriveTable.Find(id) != null)
             {
-                faults.Add((id, "动作 Id " + id + " 与内置原语重名"));
+                faults.Add(new(id, LiveScriptFaultKind.PrimitiveNameTaken, "动作 Id " + id + " " + PrimitiveNameTaken));
             }
 
             faults.AddRange(ParamFaults(id, "动作 " + id, action.Params));
@@ -147,50 +165,53 @@ internal static class RimRunnerLiveScripts
         return faults.DistinctBy(fault => fault.Text).ToList();
     }
 
-    private static IEnumerable<(string? Id, string Text)> ParamFaults(string id, string owner,
+    private static IEnumerable<LiveScriptFault> ParamFaults(string id, string owner,
         IReadOnlyList<RimRunnerLiveParam> parameters)
     {
         foreach (RimRunnerLiveParam param in parameters)
         {
             if (param.Name == null || !ParamName.IsMatch(param.Name))
             {
-                yield return (id, owner + " 的参数名「" + param.Name + "」须以字母开头，只用字母、数字、- 与 _");
+                yield return new(id, LiveScriptFaultKind.ParamNameInvalid,
+                    owner + " 的参数名「" + param.Name + "」须以字母开头，只用字母、数字、- 与 _");
             }
         }
 
         foreach (string duplicate in parameters.GroupBy(param => param.Name).Where(group => group.Count() > 1)
                      .Select(group => group.Key))
         {
-            yield return (id, owner + " 的参数名 " + duplicate + " 重复");
+            yield return new(id, LiveScriptFaultKind.ParamNameDuplicate, owner + " 的参数名 " + duplicate + " 重复");
         }
     }
 
-    internal static List<(string? Id, string Text)> ConditionFaults(IReadOnlyList<RimRunnerLiveCondition> conditions)
+    internal static List<LiveScriptFault> ConditionFaults(IReadOnlyList<RimRunnerLiveCondition> conditions)
     {
-        var faults = new List<(string? Id, string Text)>();
+        var faults = new List<LiveScriptFault>();
         foreach (RimRunnerLiveCondition condition in conditions)
         {
             if (string.IsNullOrWhiteSpace(condition.Id) || condition.Id.Any(char.IsWhiteSpace) || condition.Id.Contains('='))
             {
-                faults.Add((null, condition.GetType().Name + " 的 Id 为空或含空白、=：「" + condition.Id + "」"));
+                faults.Add(new(null, LiveScriptFaultKind.IdInvalid,
+                    condition.GetType().Name + " 的 Id 为空或含空白、=：「" + condition.Id + "」"));
                 continue;
             }
 
             if (conditions.Count(other => other.Id == condition.Id) > 1)
             {
-                faults.Add((condition.Id, "条件 Id " + condition.Id + " 重复：" + string.Join("、", conditions
+                faults.Add(new(condition.Id, LiveScriptFaultKind.IdDuplicate, "条件 Id " + condition.Id + " 重复：" + string.Join("、", conditions
                     .Where(other => other.Id == condition.Id).Select(other => other.GetType().Name))));
             }
 
             if (condition.Id == RimRunnerDriveTable.UntilLetter)
             {
-                faults.Add((condition.Id, "条件 Id " + condition.Id + " 与内置条件重名"));
+                faults.Add(new(condition.Id, LiveScriptFaultKind.PrimitiveNameTaken, "条件 Id " + condition.Id + " 与内置条件重名"));
             }
 
             foreach (RimRunnerLiveParam reserved in condition.Params.Where(param =>
                          RimRunnerDriveTable.Until.Params.Any(own => own.Name == param.Name)))
             {
-                faults.Add((condition.Id, "条件 " + condition.Id + " 的参数名 " + reserved.Name + " 是 live until 的保留名"));
+                faults.Add(new(condition.Id, LiveScriptFaultKind.ConditionReservedParam,
+                    "条件 " + condition.Id + " 的参数名 " + reserved.Name + " 是 live until 的保留名"));
             }
 
             faults.AddRange(ParamFaults(condition.Id, "条件 " + condition.Id, condition.Params));

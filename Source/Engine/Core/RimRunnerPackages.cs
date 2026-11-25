@@ -51,35 +51,62 @@ public static class RimRunnerPackages
             : null;
     }
 
+    internal enum Situation
+    {
+        NotInAnyUnit,
+        LoadBrokenListed,
+        LoadBrokenUnbound,
+        ModListDrift,
+        Present,
+        Absent,
+    }
+
     internal static string UnitSituation(string assemblyName)
+    {
+        (Situation situation, string? packageId, string? modListName) = SituationOfAssembly(assemblyName);
+        return UnitSituation(situation, (packageId, modListName));
+    }
+
+    internal static Situation SituationOf(string assemblyName) => SituationOfAssembly(assemblyName).Situation;
+
+    private static (Situation Situation, string? PackageId, string? ModListName) SituationOfAssembly(string assemblyName)
     {
         if (!UnitAssemblyMap().TryGetValue(assemblyName, out string? packageId))
         {
-            return UnitSituation(null, RimRunnerPackagePresence.Cell.Present, null);
+            return (Situation.NotInAnyUnit, null, null);
         }
 
         Snapshot current = Current();
-        return UnitSituation(packageId, RimRunnerPackagePresence.Classify(current.ModListBound, current.ModListIds, current.LoadedIds,
-            current.SuffixedIds, packageId), current.ModListBound ? current.ModListName : null);
+        string? modListName = current.ModListBound ? current.ModListName : null;
+        return (SituationOf(packageId, RimRunnerPackagePresence.Classify(current.ModListBound, current.ModListIds,
+            current.LoadedIds, current.SuffixedIds, packageId), modListName), packageId, modListName);
     }
 
-    internal static string UnitSituation(string? packageId, RimRunnerPackagePresence.Cell cell, string? modListName)
+    internal static Situation SituationOf(string? packageId, RimRunnerPackagePresence.Cell cell, string? modListName)
     {
         if (packageId == null)
         {
-            return "不属于产品描述符登记的任何产品单元";
+            return Situation.NotInAnyUnit;
         }
 
         return cell switch
-            {
-                RimRunnerPackagePresence.Cell.LoadBroken => modListName != null
-                    ? "所属的 " + packageId + " 写在名单 " + modListName + " 里却未装入"
-                    : "所属的 " + packageId + " 未装入（本轮未绑名单，按在场判）",
-                RimRunnerPackagePresence.Cell.ModListDrift => "所属的 " + packageId + " 不在名单 " + modListName + " 里却已装入",
-                RimRunnerPackagePresence.Cell.Present => "所属的 " + packageId + " 已装入",
-                _ => "所属的 " + packageId + " 本轮缺席",
-            };
+        {
+            RimRunnerPackagePresence.Cell.LoadBroken => modListName != null ? Situation.LoadBrokenListed : Situation.LoadBrokenUnbound,
+            RimRunnerPackagePresence.Cell.ModListDrift => Situation.ModListDrift,
+            RimRunnerPackagePresence.Cell.Present => Situation.Present,
+            _ => Situation.Absent,
+        };
     }
+
+    private static string UnitSituation(Situation situation, (string? PackageId, string? ModListName) unit) => situation switch
+    {
+        Situation.NotInAnyUnit => "不属于产品描述符登记的任何产品单元",
+        Situation.LoadBrokenListed => "所属的 " + unit.PackageId + " 写在名单 " + unit.ModListName + " 里却未装入",
+        Situation.LoadBrokenUnbound => "所属的 " + unit.PackageId + " 未装入（本轮未绑名单，按在场判）",
+        Situation.ModListDrift => "所属的 " + unit.PackageId + " 不在名单 " + unit.ModListName + " 里却已装入",
+        Situation.Present => "所属的 " + unit.PackageId + " 已装入",
+        _ => "所属的 " + unit.PackageId + " 本轮缺席",
+    };
 
     private static Dictionary<string, string> UnitAssemblyMap()
     {

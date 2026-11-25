@@ -2,6 +2,8 @@ namespace RimRunner;
 
 public sealed partial class RimRunnerRegressionContext
 {
+    internal const string FilmOnlyReason = "悬停只在拍摄实例里生效";
+
     /// <summary>拍摄实例里悬停在物体上，逐帧跟随物体；持续到另设悬停或 EndHover。</summary>
     /// <remarks>展台实例不生效，只落一条面板消息；自动实例里调用即抛。</remarks>
     public void HoverOn(Thing thing)
@@ -21,7 +23,7 @@ public sealed partial class RimRunnerRegressionContext
                 RimRunnerSceneHost.NoteHoverIgnored();
                 break;
             default:
-                throw new InvalidOperationException(RimRunnerLog.Prefix + " 悬停只在拍摄实例里生效，展台实例里调用只落一条面板消息");
+                throw new InvalidOperationException(RimRunnerLog.Prefix + " " + FilmOnlyReason + "，展台实例里调用只落一条面板消息");
         }
     }
 
@@ -39,7 +41,7 @@ public sealed partial class RimRunnerRegressionContext
                 RimRunnerSceneHost.NoteHoverIgnored();
                 break;
             default:
-                throw new InvalidOperationException(RimRunnerLog.Prefix + " 悬停只在拍摄实例里生效，展台实例里调用只落一条面板消息");
+                throw new InvalidOperationException(RimRunnerLog.Prefix + " " + FilmOnlyReason + "，展台实例里调用只落一条面板消息");
         }
     }
 
@@ -56,7 +58,7 @@ public sealed partial class RimRunnerRegressionContext
                 RimRunnerSceneHost.NoteHoverIgnored();
                 break;
             default:
-                throw new InvalidOperationException(RimRunnerLog.Prefix + " 悬停只在拍摄实例里生效，展台实例里调用只落一条面板消息");
+                throw new InvalidOperationException(RimRunnerLog.Prefix + " " + FilmOnlyReason + "，展台实例里调用只落一条面板消息");
         }
     }
 

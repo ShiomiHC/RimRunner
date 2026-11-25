@@ -266,7 +266,7 @@ public sealed partial class RimRunnerRegressionContext : RimRunnerContext
             {
                 label = label ?? "",
                 expected = RimRunnerAssertLine.NoneOffending,
-                actual = "offenders 为 null：扫描没有交出结果",
+                actual = RimRunnerAssertLine.NoScanResult,
                 pass = false,
                 source = source.Text ?? ""
             });
@@ -278,7 +278,7 @@ public sealed partial class RimRunnerRegressionContext : RimRunnerContext
         {
             label = label ?? "",
             expected = RimRunnerAssertLine.NoneOffending,
-            actual = listed.Count == 0 ? RimRunnerAssertLine.NoneOffending : listed.Count + " 项违例",
+            actual = listed.Count == 0 ? RimRunnerAssertLine.NoneOffending : RimRunnerAssertLine.OffendingCount(listed.Count),
             pass = listed.Count == 0,
             source = source.Text ?? "",
             explanation = listed.Count == 0 || string.IsNullOrEmpty(explanation) ? null : explanation,

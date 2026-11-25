@@ -4,6 +4,10 @@ namespace RimRunner;
 
 internal static class RimRunnerTaleDanglingProbe
 {
+    internal const string AddOccasion = "入表即悬空";
+
+    internal const string DanglingReason = "tale 仍持有已丢弃的 pawn，此后每次存档都写出 null，读档即丢";
+
     private static readonly Dictionary<Type, FieldInfo[]> CarrierFieldCache = [];
 
     private static readonly HashSet<string> Reported = new(StringComparer.Ordinal);
@@ -52,10 +56,10 @@ internal static class RimRunnerTaleDanglingProbe
                 continue;
             }
 
-            string origin = occasion == "入表即悬空"
+            string origin = occasion == AddOccasion
                 ? " stack=" + RimRunnerObservationBuffer.DiagStack()
                 : string.Empty;
-            RimRunnerSentinel.Raise(occasion + "：tale 仍持有已丢弃的 pawn，此后每次存档都写出 null，读档即丢",
+            RimRunnerSentinel.Raise(occasion + "：" + DanglingReason,
                 "tale=" + tale.def?.defName + "(" + tale.GetType().Name + ")"
                 + " 槽=" + field.Name + " uses=" + tale.Uses
                 + " pawn=" + pawn + " id=" + pawn.ThingID + origin);
@@ -133,6 +137,6 @@ internal static class Patch_TaleManager_Add_RimRunnerTaleProbe
 {
     private static void Postfix(Tale tale)
     {
-        RimRunnerTaleDanglingProbe.Inspect("入表即悬空", tale);
+        RimRunnerTaleDanglingProbe.Inspect(RimRunnerTaleDanglingProbe.AddOccasion, tale);
     }
 }

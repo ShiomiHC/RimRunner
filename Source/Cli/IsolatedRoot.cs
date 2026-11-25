@@ -2,8 +2,7 @@ namespace RimRunnerCli;
 
 internal static class IsolatedRoot
 {
-    internal const string Variable = ObservationCore.IsolatedRootVariable;
-    internal const string SignaturesVariable = "RIMRUNNER_SIGNATURES";
+    internal const string Variable = ObservationHits.IsolatedRootVariable;
 
     internal static string? Dir =>
         CommandContext.GetEnvironmentVariable(Variable) is { } value && !string.IsNullOrWhiteSpace(value)
@@ -15,11 +14,8 @@ internal static class IsolatedRoot
     internal static string? Refusal(bool inPackage)
     {
         if (Active) return null;
-        foreach (string variable in new[] { EnginePackage.RootVariable, SignaturesVariable })
-        {
-            if (!string.IsNullOrWhiteSpace(CommandContext.GetEnvironmentVariable(variable)))
-                return $"{variable} 只在隔离根（{Variable}）下生效；当前不在隔离根下，本命令不运行";
-        }
+        if (!string.IsNullOrWhiteSpace(CommandContext.GetEnvironmentVariable(EnginePackage.RootVariable)))
+            return $"{EnginePackage.RootVariable} 只在隔离根（{Variable}）下生效；当前不在隔离根下，本命令不运行";
 
         return inPackage
             ? null

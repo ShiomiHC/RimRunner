@@ -41,7 +41,6 @@ internal sealed class EnginePackage
     internal string SelfTestsPath => Path.Combine(EngineDir, SelfTestsFileName);
     internal string FixtureIndexPath => Path.Combine(Root, "tools", "FixtureIndex", FixtureIndexExeName);
     internal string TargetsPath => Path.Combine(Root, TargetsFileName);
-    internal string ObservationsDir => Path.Combine(Root, "observations");
     internal string ManifestPath => Path.Combine(Root, ManifestFileName);
 
     internal EnginePackage AssertComplete()

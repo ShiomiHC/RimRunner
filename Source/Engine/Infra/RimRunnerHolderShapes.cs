@@ -101,7 +101,7 @@ internal static class RimRunnerHolderShapes
 
     private static FieldInfo? ResolveStaticRoot(string label)
     {
-        int separator = label.IndexOf("::", StringComparison.Ordinal);
+        int separator = label.IndexOf(RimRunnerHolderScan.RootSeparator, StringComparison.Ordinal);
         if (separator <= 0)
         {
             return null;
@@ -113,7 +113,7 @@ internal static class RimRunnerHolderShapes
             return RimRunnerHolderScan.StaticRootFields().TryGetValue(label, out FieldInfo? listed) ? listed : null;
         }
 
-        string fieldName = label[(separator + 2)..];
+        string fieldName = label[(separator + RimRunnerHolderScan.RootSeparator.Length)..];
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             if (assembly.IsDynamic)

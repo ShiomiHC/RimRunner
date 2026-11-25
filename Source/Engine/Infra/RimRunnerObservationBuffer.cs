@@ -811,9 +811,12 @@ public static class RimRunnerObservationBuffer
             caseId = activeCaseId;
         }
 
-        RimRunnerSentinel.Raise("用例 " + caseId + " 读观测缓冲里已溢出的类别：本条窗内超过 " + MaxEventsPerKind
-                                + " 条，超出的事件已丢，读到的不是全部事件", kind);
+        RimRunnerSentinel.Raise(OverflowReadReason(caseId), kind);
     }
+
+    internal static string OverflowReadReason(string caseId) =>
+        "用例 " + caseId + " 读观测缓冲里已溢出的类别：本条窗内超过 " + MaxEventsPerKind
+        + " 条，超出的事件已丢，读到的不是全部事件";
 
     private static bool TryAccept(string kind, int count)
     {

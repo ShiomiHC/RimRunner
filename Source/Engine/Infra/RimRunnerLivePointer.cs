@@ -84,8 +84,14 @@ internal static class RimRunnerLivePointer
     internal static Vector2 ToUi(Vector2 screen) =>
         new(screen.x / Prefs.UIScale, (UnityEngine.Screen.height - screen.y) / Prefs.UIScale);
 
-    internal static string DescribeScreen(Vector2 screen) =>
-        "屏幕点 (" + Mathf.FloorToInt(screen.x) + "," + (UnityEngine.Screen.height - 1 - Mathf.FloorToInt(screen.y)) + ")";
+    internal static (int X, int Y) ScreenPixel(Vector2 screen) =>
+        (Mathf.FloorToInt(screen.x), UnityEngine.Screen.height - 1 - Mathf.FloorToInt(screen.y));
+
+    internal static string DescribeScreen(Vector2 screen)
+    {
+        (int x, int y) = ScreenPixel(screen);
+        return "屏幕点 (" + x + "," + y + ")";
+    }
 
     internal static IEnumerable<RimRunnerWait> Click(Vector2 screen, int button)
     {

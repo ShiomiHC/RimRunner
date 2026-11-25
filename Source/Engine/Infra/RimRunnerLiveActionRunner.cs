@@ -86,11 +86,14 @@ internal static class RimRunnerLiveActionRunner
         }
     }
 
+    internal const string ArgInvalidPrefix = "参数不合法：";
+    internal const string ProductFaultPrefix = "本产品侧失败：";
+
     internal static string Describe(string owner, Exception exception)
     {
         if (exception is RimRunnerLiveArgException)
         {
-            return "参数不合法：" + exception.Message;
+            return ArgInvalidPrefix + exception.Message;
         }
 
         RimRunnerClaimedFault? fault = RimRunnerClaimedFault.Unwrap(exception);
@@ -102,6 +105,6 @@ internal static class RimRunnerLiveActionRunner
 
         return fault.Kind == RimRunnerClaimedFault.FaultKind.Precondition
             ? "前提不成立：" + fault.Message
-            : "本产品侧失败：" + fault.Message;
+            : ProductFaultPrefix + fault.Message;
     }
 }

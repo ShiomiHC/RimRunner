@@ -423,7 +423,7 @@ internal static class RimRunnerIsolatedMap
             return ["场面的独立小图已不在本局"];
         }
 
-        List<string> drift = entry.Restore!.Close(_ => false);
+        List<string> drift = entry.Restore!.Close(_ => false).Select(unres => unres.Text).ToList();
         entry.Restore = null;
         drift.AddRange(entry.Pristine.DriftTo(RimRunnerMapImprint.Take(entry.Map)));
         if (drift.Count > 0)
@@ -643,7 +643,7 @@ internal static class RimRunnerIsolatedMap
                 continue;
             }
 
-            List<string> mapDrift = entry.Restore!.Close(held);
+            List<string> mapDrift = entry.Restore!.Close(held).Select(unres => unres.Text).ToList();
             componentNotes?.AddRange(entry.Restore.ComponentNotes);
             worldRestores?.Add(entry.Restore);
             entry.Restore = null;

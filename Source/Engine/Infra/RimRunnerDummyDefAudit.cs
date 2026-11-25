@@ -91,6 +91,9 @@ internal static class RimRunnerDummyDefAudit
 
     private const string BleedingGiverSetName = "RimRunnerDummy_Bleeding";
 
+    internal const string InertBelowThreshold = "该 def 未写到会激活的程度";
+    internal const string InertNotInTable = "不在判据表里";
+
     private static readonly Dictionary<PawnKindDef, List<KeyValuePair<string, string>>> cache = [];
 
     private static readonly HashSet<PawnKindDef> warnedThisCase = [];
@@ -142,7 +145,7 @@ internal static class RimRunnerDummyDefAudit
         foreach (string inert in declared)
         {
             found.Add(new KeyValuePair<string, string>(RimRunnerWarningKey.InertDeclaration, owner + " " + inert
-                + (fields.Any(field => field.Path == inert) ? "（该 def 未写到会激活的程度）" : "（不在判据表里）")));
+                + "（" + (fields.Any(field => field.Path == inert) ? InertBelowThreshold : InertNotInTable) + "）"));
         }
 
         if (intent != null && string.IsNullOrWhiteSpace(intent.reason))

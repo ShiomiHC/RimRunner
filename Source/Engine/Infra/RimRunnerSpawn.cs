@@ -4,6 +4,10 @@ namespace RimRunner;
 /// <remarks>放下与生成失败的物按回执读，不抛。玩家无法建造的地形、无法站立的交互格、dev 菜单不生成的 Def 照放，并记在回执的 Warnings。只放非 pawn 的 ThingDef。</remarks>
 public static class RimRunnerSpawn
 {
+    internal const string TerrainUnbuildableReason = "地形上玩家无法建造";
+    internal const string InteractionBlockedReason = "交互格不可站";
+    internal const string NotDebugSpawnableReason = "原版 dev 菜单不生成这个 Def";
+
     internal static RimRunnerSpawnReceipt PlaceCore(Map map, IReadOnlyList<ThingDef> defs, CellRect area, int count,
         ThingDef? stuff, Action<Thing>? onPlaced)
     {
@@ -163,17 +167,17 @@ public static class RimRunnerSpawn
     {
         if (def.category == ThingCategory.Building && !GenConstruct.CanBuildOnTerrain(def, cell, map, rot))
         {
-            AddWarning(warnings, def, "地形上玩家无法建造", cell);
+            AddWarning(warnings, def, TerrainUnbuildableReason, cell);
         }
 
         if (def.HasSingleOrMultipleInteractionCells && InteractionCellBlocked(def, cell, rot, map))
         {
-            AddWarning(warnings, def, "交互格不可站", cell);
+            AddWarning(warnings, def, InteractionBlockedReason, cell);
         }
 
         if (!DebugThingPlaceHelper.IsDebugSpawnable(def, allowPlayerBuildable: true))
         {
-            AddWarning(warnings, def, "原版 dev 菜单不生成这个 Def", cell);
+            AddWarning(warnings, def, NotDebugSpawnableReason, cell);
         }
     }
 

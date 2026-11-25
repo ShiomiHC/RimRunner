@@ -337,6 +337,10 @@ internal static class RimRunnerWarnings
         return findings;
     }
 
+    internal const string OriginMissingReason = "未指定 Origin";
+    internal const string OriginNotAllowedReason = "不带归属";
+    internal const string OriginMalformedReason = "无法识别";
+
     internal static List<RimRunnerFinding> AckDeclarationFindings(string id, Type caseType)
     {
         List<RimRunnerFinding> findings = [];
@@ -363,21 +367,23 @@ internal static class RimRunnerWarnings
             if (OriginKeys.Contains(ack.Key) && ack.Origin == null)
             {
                 findings.Add(RimRunnerFinding.Warning(id, RimRunnerWarningKey.InertDeclaration,
-                    "用例 " + id + " 认领 " + ack.Key + " 未指定 Origin，这条认领不生效：这个键的每行行首标着归属"));
+                    "用例 " + id + " 认领 " + ack.Key + " " + OriginMissingReason + "，这条认领不生效：这个键的每行行首标着归属"));
                 continue;
             }
 
             if (!OriginKeys.Contains(ack.Key) && ack.Origin != null)
             {
                 findings.Add(RimRunnerFinding.Warning(id, RimRunnerWarningKey.InertDeclaration,
-                    "用例 " + id + " 认领 " + ack.Key + " 写 Origin = \"" + ack.Origin + "\"，这条认领不生效：这个键的警告不带归属"));
+                    "用例 " + id + " 认领 " + ack.Key + " 写 Origin = \"" + ack.Origin + "\"，这条认领不生效：这个键的警告"
+                    + OriginNotAllowedReason));
                 continue;
             }
 
             if (ack.Origin != null && !RimRunnerOrigin.IsWellFormed(ack.Origin))
             {
                 findings.Add(RimRunnerFinding.Warning(id, RimRunnerWarningKey.InertDeclaration,
-                    "用例 " + id + " 认领 " + ack.Key + " 的 Origin = \"" + ack.Origin + "\" 无法识别，这条认领不生效"));
+                    "用例 " + id + " 认领 " + ack.Key + " 的 Origin = \"" + ack.Origin + "\" " + OriginMalformedReason
+                    + "，这条认领不生效"));
                 continue;
             }
 

@@ -4,6 +4,7 @@ internal sealed class RimRunnerProbeHits
 {
     private sealed class Hit
     {
+        internal required string Key;
         internal string? CaseId;
         internal required string Text;
         internal string? Tail;
@@ -33,7 +34,7 @@ internal sealed class RimRunnerProbeHits
 
     internal void Add(string key, string? caseId, string text, string? tail = null, string? origin = null)
     {
-        Hit hit = new() { CaseId = caseId, Text = text, Tail = tail, Count = 1, Origin = origin };
+        Hit hit = new() { Key = key, CaseId = caseId, Text = text, Tail = tail, Count = 1, Origin = origin };
         hits[key] = hit;
         order.Add(hit);
     }
@@ -41,8 +42,11 @@ internal sealed class RimRunnerProbeHits
     internal List<string> Consume(string caseId, Func<string, bool> match) =>
         Take(hit => hit.CaseId == caseId && match(hit.Text)).Select(hit => hit.Text + hit.Tail).ToList();
 
-    internal List<string> ConsumeCounted(string caseId, Func<string, bool> match) =>
-        Take(hit => hit.CaseId == caseId && match(hit.Text)).Select(Describe).ToList();
+    internal List<(string Key, string Text, string? Origin, int Count)> ConsumeHits(string caseId, Func<string, bool> match) =>
+        Take(hit => hit.CaseId == caseId && match(hit.Text)).Select(hit => (hit.Key, hit.Text, hit.Origin, hit.Count)).ToList();
+
+    internal List<(string Text, int Count)> ConsumeKey(string key) =>
+        Take(hit => hit.Key == key).Select(hit => (hit.Text, hit.Count)).ToList();
 
     internal List<string> Drain(string caseId) =>
         Take(hit => hit.CaseId == caseId).Select(Describe).ToList();

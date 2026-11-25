@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace RimRunner;
 
 /// <summary>产品写进实例 Config 的 Prefs 覆盖与 mod 设置都由游戏读取。</summary>
-/// <remarks>只验输入清单列出的条目：Prefs 键须是 PrefsData 的字段，mod 设置须有已装载的 Mod 子类读它；玩家基底带来的不核对。</remarks>
+/// <remarks>只验输入清单列出的条目：Prefs 键须是 PrefsData 的字段，mod 设置须有已装载的 Mod 子类读它；玩家基底带来的条目不核对。</remarks>
 public class Case_ConfigInputs : RimRunnerRegression
 {
     private const string Source = "引擎承诺：产品根写进实例 Config 的 Prefs 覆盖与 mod 设置都被游戏读到；"
@@ -30,7 +30,7 @@ public class Case_ConfigInputs : RimRunnerRegression
 
         ctx.AssertTrue("CFG1-Manifest", manifest != null,
             "无法读取实例 Config 里的输入清单：" + path + "（" + failure + "）",
-            RimRunnerExpectationSource.Literal(Source));
+            RimRunnerExpectationSource.Literal("引擎承诺：写进实例 Config 的产品输入列在输入清单里"));
         if (manifest == null)
         {
             return;

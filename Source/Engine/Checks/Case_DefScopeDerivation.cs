@@ -21,7 +21,7 @@ public class Case_DefScopeDerivation : RimRunnerRegression
 
         Type[] probeTypes = RimRunnerProduct.Descriptor.ProbeTypes ?? [];
         ctx.AssertTrue("SCOPE1-Gate-DescriptorProbes", probeTypes.Length > 0,
-            "产品描述符的 ProbeTypes 为空：本条无从核对本产品侧是否被完整识别",
+            "产品描述符的 ProbeTypes 为空：本用例无从核对本产品侧是否被完整识别",
             RimRunnerExpectationSource.Literal(Source));
 
         RimRunnerDefScope.Derivation cached = RimRunnerDefScope.CachedForSelfTest;
@@ -55,12 +55,11 @@ public class Case_DefScopeDerivation : RimRunnerRegression
             "[engine] 认作本产品侧的 mod 包为空",
             RimRunnerExpectationSource.Literal(Source));
 
-        ctx.AssertTrue("SCOPE1-EngineContentFilesNonEmpty",
-            cached.EngineContentFileNames.Count > 0
-            && cached.EngineContentFileNames.Contains("RimRunnerDummy_Races.xml")
-            && cached.EngineContentFileNames.Contains("RimRunnerDummy_Kinds.xml"),
-            "[engine] 装着引擎程序集的 pack 根下无法读取 Defs/RimRunner/ 的假人文件（读到 "
-            + cached.EngineContentFileNames.Count + " 个文件名）：def 扫描面按文件名过滤引擎假人，空集时静默不过滤",
+        string[] missingContent = new[] { "RimRunnerDummy_Races.xml", "RimRunnerDummy_Kinds.xml" }
+            .Where(file => !cached.EngineContentFileNames.Contains(file)).ToArray();
+        ctx.AssertTrue("SCOPE1-EngineContentFilesNonEmpty", missingContent.Length == 0,
+            "[engine] 装着引擎程序集的 pack 根下 Defs/RimRunner/ 读到 " + cached.EngineContentFileNames.Count
+            + " 个文件名，缺 " + string.Join("、", missingContent) + "：缺失文件里的引擎假人进入 def 扫描面",
             RimRunnerExpectationSource.Literal(Source));
 
         RimRunnerDefScope.Derivation fresh = RimRunnerDefScope.Derive(runningMods);
@@ -93,7 +92,7 @@ public class Case_DefScopeDerivation : RimRunnerRegression
             RimRunnerExpectationSource.Literal(Source));
         List<ModContentPack> officialOnly = runningMods.Where(pack => pack.IsOfficialMod).ToList();
         ctx.AssertTrue("SCOPE1-Gate-OfficialOnlyListNonEmpty", officialOnly.Count > 0,
-            "[engine] 已加载 mod 名单里没有官方包（Core / DLC）：下一段的输入退化成空表，与上一段同形",
+            "[engine] 已加载 mod 名单里没有官方包（Core / DLC），「只含官方包」一段的输入为空",
             RimRunnerExpectationSource.Literal(Source));
         ctx.AssertThrows<InvalidOperationException>("SCOPE1-Sentinel-UnreadyThrows-OfficialOnly",
             () => RimRunnerDefScope.Derive(officialOnly),

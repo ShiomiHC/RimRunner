@@ -10,7 +10,7 @@ namespace RimRunner;
     "Cap 段让 vanilla 按自己的路径触顶，触顶时 vanilla 自己记这行")]
 public class Case_LogCaptureSurface : RimRunnerRegression
 {
-    private const string Source = "引擎承诺：游戏里每条错误级日志（含 Debug.* 输出的日志与异常）恰记一条、带抛出点，日志条数过万后仍捕获；"
+    private const string Source = "引擎承诺：游戏里每条错误级日志（含 Debug.* 输出的日志与异常）恰记一条，异常带抛出点，日志条数过万后仍捕获；"
                                   + "不成立时报告的「没有未认领错误级日志」不可信，认领错误级日志的断言计数也偏。"
                                   + "名单里改写日志管线的 mod 会破坏这条承诺";
 
@@ -51,8 +51,7 @@ public class Case_LogCaptureSurface : RimRunnerRegression
                 Log.ErrorOnce(marker, OnceProbeKey);
                 Log.ErrorOnce(marker, OnceProbeKey);
             },
-            "用例里 ErrorOnce 同键连续输出两次应恰记一条：零条时只输出一次的错误级日志在复用实例上，或被批内先执行的用例输出过之后不再出现，"
-            + "认领它的断言单独执行时通过，改用另一种执行方式时未通过");
+            "用例里 ErrorOnce 同键连续输出两次应恰记一条");
         RimRunnerLogMonitor.RewindOnceKeys();
         AssertClaimedOnce(ctx, "LOGCAP1-Once-Rewound", marker,
             () => Log.ErrorOnce(marker, OnceProbeKey),
@@ -81,7 +80,7 @@ public class Case_LogCaptureSurface : RimRunnerRegression
         ctx.AssertTrue("LOGCAP1-Verse-Repeat-Stack",
             picked.Count == 2 && picked.All(line => line.Text.Contains(nameof(ThrowStackProbe))),
             "同一异常写进 Log.Error 正文连续输出两次，两条正文都应带抛出帧 " + nameof(ThrowStackProbe)
-            + "：缺失的那条只剩栈去重引用，按栈帧写的认领与他 mod 归因对缺失的那条失效。实收 "
+            + "；实收 "
             + picked.Count + " 条=[" + string.Join(" | ", picked.Select(line => line.Text)) + "]",
             RimRunnerExpectationSource.Literal(Source));
         ctx.AssertTrue("LOGCAP1-Verse-Repeat-ThrowSite",
@@ -150,11 +149,12 @@ public class Case_LogCaptureSurface : RimRunnerRegression
         {
             RimRunnerLogMonitor.SetVanillaCountForSelfTest(RimRunnerLogMonitor.VanillaMessageCap - 1);
             Log.Message("LOGCAP1 触顶探针");
-            List<string> hits = RimRunnerLogMonitor.TakeCapHitsSince(mark);
-            ctx.Current!.expectedLogs.AddRange(hits);
+            List<RimRunnerLogMonitor.CapHit> hits = RimRunnerLogMonitor.TakeCapHitsSince(mark);
+            ctx.Current!.expectedLogs.AddRange(hits.Select(hit => hit.Entry.Line));
             ctx.AssertTrue("LOGCAP1-Cap-Recorded",
-                hits.Count == 1 && hits[0].StartsWith("用例 " + Id + " 窗内", StringComparison.Ordinal),
-                "[engine] 日志计数调到上限前一条再发一条，报告的触顶记录应恰一条且标本用例：记录=[" + string.Join(" | ", hits)
+                hits.Count == 1 && hits[0].InWindow && hits[0].Owner?.Contains(Id, StringComparison.Ordinal) == true,
+                "[engine] 日志计数调到上限前一条再发一条，报告的触顶记录应恰一条且标为本用例：记录=["
+                + string.Join(" | ", hits.Select(hit => hit.Entry.Line))
                 + "] 计数=" + RimRunnerLogMonitor.VanillaCountForSelfTest,
                 RimRunnerExpectationSource.Literal(Source));
 
@@ -215,7 +215,7 @@ public class Case_LogCaptureSurface : RimRunnerRegression
             return exception;
         }
 
-        throw new InvalidOperationException("ThrowStackProbe 没有抛出");
+        throw new InvalidOperationException("ThrowStackProbe 未抛出");
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -1,7 +1,7 @@
 namespace RimRunner;
 
 /// <summary>被钉住的 pawn 不进随机精神态：社交斗殴与心情崩溃两条随机入口按 pawn 关掉。</summary>
-/// <remarks>只验斗殴与心情崩溃三处入口：被钉住的 pawn 不开打不崩溃，未钉的 pawn 会开打、会崩溃，SuppressRandomMentalStates 后全部不出态；崩溃含进精神态、紧张性崩溃与出走。</remarks>
+/// <remarks>只验斗殴与心情崩溃三处入口：被钉住的 pawn 不开打不崩溃，未钉的 pawn 会开打、会崩溃，SuppressRandomMentalStates 后全部不出态；崩溃含三种形态：进入精神态、紧张性崩溃与出走。</remarks>
 [RimRunnerEnvCheck(RimRunnerFacility.AgencyPin)]
 public class Case_PinnedMentalStateGate : RimRunnerRegression
 {
@@ -24,7 +24,7 @@ public class Case_PinnedMentalStateGate : RimRunnerRegression
         ctx.TrackRestore(() => DebugSettings.alwaysSocialFight = originalAlwaysSocialFight,
             "还原 DebugSettings.alwaysSocialFight");
         RimRunnerFault.Require(DebugSettings.enableRandomMentalStates,
-            "全局随机精神态开关已关：各段都会在不经钉住的情况下通过", "DebugSettings.enableRandomMentalStates");
+            "全局随机精神态开关已关，未钉住的 pawn 也不触发精神态", "DebugSettings.enableRandomMentalStates");
 
         Pawn controlA = Spawn(ctx, "AGP1-CtlA", RimRunnerDisposableAgency.Free);
         Pawn controlB = Spawn(ctx, "AGP1-CtlB", RimRunnerDisposableAgency.Free);
@@ -59,7 +59,7 @@ public class Case_PinnedMentalStateGate : RimRunnerRegression
                 ? null
                 : new[]
                 {
-                    "未钉 pawn 心情置 0 后做 " + controlCalls + " 次崩溃判定仍未崩溃："
+                    "未钉 pawn 心情置 0 后执行 " + controlCalls + " 次崩溃判定仍未崩溃："
                     + DescribeBreak(moodControl, controlFaction) + " 能随机崩溃=" + moodControl.mindState.mentalBreaker.CanDoRandomMentalBreaks
                     + " 崩溃被挡=" + moodControl.mindState.mentalBreaker.Blocked
                 },

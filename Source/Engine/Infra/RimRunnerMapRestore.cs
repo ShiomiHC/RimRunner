@@ -2,13 +2,13 @@ namespace RimRunner;
 
 internal sealed class RimRunnerMapRestore
 {
-    private const string ProductComponentReason =
+    internal const string ProductComponentReason =
         "被测产品组件的存档状态在收尾时与开始执行前不匹配";
 
-    private const string GlobalComponentReason =
+    internal const string GlobalComponentReason =
         "世界与整局层不回档：差会带进其后的用例，同一元素之后的写入者不会重复点名";
 
-    private const string MapComponentReason = "这张图回载基线档或弃用，差不带进下一条用例";
+    internal const string MapComponentReason = "这张图回载基线档或弃用，差不带进下一条用例";
 
     private readonly Dictionary<int, int> filthOriginals = [];
     private readonly Dictionary<int, int> hitPointOriginals = [];
@@ -33,11 +33,17 @@ internal sealed class RimRunnerMapRestore
 
     internal string BatchLabel => "屏障批（" + string.Join("、", Members) + "）";
 
-    internal IDisposable EnterGap() => RimRunnerLogMonitor.GapSegment(BatchLabel + "收尾时的主图还原");
+    internal string GapLabel => BatchLabel + "收尾时的主图还原";
+
+    internal IDisposable EnterGap() => RimRunnerLogMonitor.GapSegment(GapLabel);
 
     internal readonly List<string> ComponentNotes = [];
 
+    internal readonly List<RimRunnerComponentState.Drift> ComponentDrifts = [];
+
     internal readonly List<string> WorldNotes = [];
+
+    internal readonly List<RimRunnerRunWorldPrint.WorldNoteEntry> WorldNoteEntries = [];
 
     internal bool ComparesWorld => worldPrint != null;
 
@@ -93,9 +99,9 @@ internal sealed class RimRunnerMapRestore
 
     private Map? LiveMap() => Find.Maps.FirstOrDefault(candidate => candidate.uniqueID == mapId && !candidate.Disposed);
 
-    internal List<string> Close(Func<Thing, bool> held)
+    internal List<Unrestorable> Close(Func<Thing, bool> held)
     {
-        List<string> unrestorable = [];
+        List<Unrestorable> unrestorable = [];
         map = LiveMap();
         if (map == null)
         {
@@ -118,18 +124,24 @@ internal sealed class RimRunnerMapRestore
 
         if (worldPrint != null)
         {
-            WorldNotes.AddRange(worldPrint.Close());
+            foreach (RimRunnerRunWorldPrint.WorldNoteEntry entry in worldPrint.Close())
+            {
+                WorldNoteEntries.Add(entry);
+                WorldNotes.Add(entry.Text);
+            }
+
             WorldCompared = true;
         }
 
         return unrestorable;
     }
 
-    private void CloseComponents(List<string> unrestorable)
+    private void CloseComponents(List<Unrestorable> unrestorable)
     {
         string batch = Members.Count > 1 ? "（屏障批 " + string.Join("、", Members) + "）" : "";
         foreach (RimRunnerComponentState.Drift drift in components!.Close())
         {
+            ComponentDrifts.Add(drift);
             if (drift.Product)
             {
                 RimRunnerSentinel.Warn(RimRunnerWarningKey.ProductComponentDrift,
@@ -138,7 +150,7 @@ internal sealed class RimRunnerMapRestore
 
             if (drift.OnMap)
             {
-                unrestorable.Add(drift.ToString());
+                unrestorable.Add(new Unrestorable(UnrestorableKind.Component, 1, drift.ToString()));
             }
             else if (!drift.Product && RimRunnerSaveProbe.Armed && drift.FilledElements != null)
             {
@@ -156,9 +168,9 @@ internal sealed class RimRunnerMapRestore
     private static bool Collectible(Thing thing) =>
         thing.def.category != ThingCategory.Plant && thing.def.category != ThingCategory.Mote && thing.def.destroyable;
 
-    private List<string> CollectLeftovers(Func<Thing, bool> held)
+    private List<Unrestorable> CollectLeftovers(Func<Thing, bool> held)
     {
-        List<string> failures = [];
+        List<Unrestorable> failures = [];
         for (int pass = 0; pass < 3; pass++)
         {
             List<Thing> mine = map!.listerThings.AllThings.Where(thing => ArrivedSinceStart(thing) && Collectible(thing))
@@ -188,7 +200,8 @@ internal sealed class RimRunnerMapRestore
                 }
                 catch (Exception exception)
                 {
-                    failures.Add("无法清理 " + thing.LabelShort + "（" + thing.ThingID + "）：" + exception.Message);
+                    failures.Add(new Unrestorable(UnrestorableKind.CleanupFailed, 1,
+                        thing.LabelShort + "（" + thing.ThingID + "）：" + exception.Message));
                 }
             }
 
@@ -311,9 +324,9 @@ internal sealed class RimRunnerMapRestore
         }
     }
 
-    private List<string> Irreversible(RimRunnerMapImprint now)
+    private List<Unrestorable> Irreversible(RimRunnerMapImprint now)
     {
-        List<string> lines = [];
+        List<Unrestorable> lines = [];
         if (now.CellCount == start.CellCount)
         {
             int revealed = 0;
@@ -327,37 +340,38 @@ internal sealed class RimRunnerMapRestore
 
             if (revealed > 0)
             {
-                lines.Add("揭开 " + revealed + " 格雾");
+                lines.Add(new Unrestorable(UnrestorableKind.FogRevealed, revealed, ""));
             }
         }
 
         foreach (KeyValuePair<int, (string label, bool[] cells)> area in start.Areas.Where(pair => !now.Areas.ContainsKey(pair.Key)))
         {
-            lines.Add("区域 " + area.Value.label + " 已删除");
+            lines.Add(new Unrestorable(UnrestorableKind.AreaRemoved, 1, area.Value.label));
         }
 
         foreach (KeyValuePair<int, (string label, HashSet<int> cells)> zone in start.Zones)
         {
             if (!now.Zones.TryGetValue(zone.Key, out var after))
             {
-                lines.Add("区 " + zone.Value.label + " 已删除");
+                lines.Add(new Unrestorable(UnrestorableKind.ZoneRemoved, 1, zone.Value.label));
             }
             else if (!zone.Value.cells.SetEquals(after.cells))
             {
-                lines.Add("区 " + zone.Value.label + " 的格已改变（" + zone.Value.cells.Count + "→" + after.cells.Count + "）");
+                lines.Add(new Unrestorable(UnrestorableKind.ZoneCellsChanged, 1,
+                    zone.Value.label + " 的格已改变（" + zone.Value.cells.Count + "→" + after.cells.Count + "）"));
             }
         }
 
         List<string> lost = start.Designations.Where(key => !now.Designations.Contains(key)).ToList();
         if (lost.Count > 0)
         {
-            lines.Add("基线标记缺少 " + lost.Count + " 个：" + string.Join("、", lost));
+            lines.Add(new Unrestorable(UnrestorableKind.DesignationMissing, lost.Count, string.Join("、", lost)));
         }
 
         return lines;
     }
 
-    private List<string> LostThings(RimRunnerMapImprint now)
+    private List<Unrestorable> LostThings(RimRunnerMapImprint now)
     {
         List<string> lost = [];
         List<string> changed = [];
@@ -392,23 +406,23 @@ internal sealed class RimRunnerMapRestore
             }
         }
 
-        List<string> lines = [];
+        List<Unrestorable> lines = [];
         if (lost.Count > 0)
         {
-            lines.Add("基线物件缺少 " + lost.Count + " 件：" + string.Join("、", lost));
+            lines.Add(new Unrestorable(UnrestorableKind.Missing, lost.Count, string.Join("、", lost)));
         }
 
         if (changed.Count > 0)
         {
-            lines.Add("基线物件挪位或改量 " + changed.Count + " 件：" + string.Join("、", changed));
+            lines.Add(new Unrestorable(UnrestorableKind.Moved, changed.Count, string.Join("、", changed)));
         }
 
         return lines;
     }
 
-    private List<string> Restore()
+    private List<Unrestorable> Restore()
     {
-        List<string> failures = [];
+        List<Unrestorable> failures = [];
         void Attempt(string what, Action action)
         {
             try
@@ -417,7 +431,7 @@ internal sealed class RimRunnerMapRestore
             }
             catch (Exception exception)
             {
-                failures.Add("回写" + what + "失败：" + exception.Message);
+                failures.Add(new Unrestorable(UnrestorableKind.WriteFailed, 1, what + "失败：" + exception.Message));
             }
         }
 
@@ -519,9 +533,9 @@ internal sealed class RimRunnerMapRestore
         }
     }
 
-    private List<string> Residual(RimRunnerMapImprint now)
+    private List<Unrestorable> Residual(RimRunnerMapImprint now)
     {
-        List<string> lines = [];
+        List<Unrestorable> lines = [];
         if (now.CellCount != start.CellCount)
         {
             return lines;
@@ -538,7 +552,7 @@ internal sealed class RimRunnerMapRestore
         {
             if (count > 0)
             {
-                lines.Add(what + " " + count + " 处回写后仍不匹配");
+                lines.Add(new Unrestorable(UnrestorableKind.Residual, count, what));
             }
         }
 
@@ -550,6 +564,45 @@ internal sealed class RimRunnerMapRestore
         Add("新建的区域", areasLeft);
         Add("新建的标记", designations);
         return lines;
+    }
+
+    internal sealed class Unrestorable(UnrestorableKind kind, int count, string detail)
+    {
+        internal readonly UnrestorableKind Kind = kind;
+
+        internal readonly int Count = count;
+
+        internal readonly string Detail = detail;
+
+        internal string Text => Kind switch
+        {
+            UnrestorableKind.CleanupFailed => "无法清理 " + Detail,
+            UnrestorableKind.FogRevealed => "揭开 " + Count + " 格雾",
+            UnrestorableKind.AreaRemoved => "区域 " + Detail + " 已删除",
+            UnrestorableKind.ZoneRemoved => "区 " + Detail + " 已删除",
+            UnrestorableKind.ZoneCellsChanged => "区 " + Detail,
+            UnrestorableKind.DesignationMissing => "基线标记缺少 " + Count + " 个：" + Detail,
+            UnrestorableKind.Missing => "基线物件缺少 " + Count + " 件：" + Detail,
+            UnrestorableKind.Moved => "基线物件挪位或改量 " + Count + " 件：" + Detail,
+            UnrestorableKind.WriteFailed => "回写" + Detail,
+            UnrestorableKind.Residual => Detail + " " + Count + " 处回写后仍不匹配",
+            UnrestorableKind.Component => Detail,
+        };
+    }
+
+    internal enum UnrestorableKind
+    {
+        CleanupFailed,
+        FogRevealed,
+        AreaRemoved,
+        ZoneRemoved,
+        ZoneCellsChanged,
+        DesignationMissing,
+        Missing,
+        Moved,
+        WriteFailed,
+        Residual,
+        Component,
     }
 }
 

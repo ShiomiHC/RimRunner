@@ -157,6 +157,8 @@ public partial class RimRunnerContext
 
     private bool unobservedCastsReported;
 
+    internal const string UnobservedCastLabel = "名册外的施放";
+
     private void ReportUnobservedAbilityCasts()
     {
         if (unobservedCastsReported)
@@ -171,7 +173,7 @@ public partial class RimRunnerContext
         }
 
         unobservedCastsReported = true;
-        AddEngineDiagnostic(RimRunnerDiagnosticKind.Coverage, "名册外的施放", note);
+        AddEngineDiagnostic(RimRunnerDiagnosticKind.Coverage, UnobservedCastLabel, note);
     }
 
     /// <summary>已登记 pawn 发射的弹丸观测，含发射与落地两个阶段。</summary>

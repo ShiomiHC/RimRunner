@@ -610,7 +610,7 @@ public static class CommandHelp
                 "  查产品测试工程、随包的用例；子串、大小写不敏感、多词取交（同一条用例上都命中）",
                 "  每项输出 Id、档（回归 / 读数用例）、摘要；真实帧用例、环境体检、排除名单里的用例在档后标出",
                 "  范围只在含查询词时输出，其余输出条数；参数化用例最多列 6 个 Id，含查询词的在前",
-                "  产品用例取自 rimrunner.toml 的 testMod.csproj 所在目录，每次现扫；描述符声明 engineSelfTests 时再查引擎自测",
+                "  产品用例取自 rimrunner.toml 的 testMod.csproj 所在目录，每次现扫",
                 "  在产品根下执行",
                 "",
                 HelpPage.OptionMarker(Switches.Json),

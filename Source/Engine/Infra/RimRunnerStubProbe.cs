@@ -3,6 +3,8 @@ using System.Threading;
 
 namespace RimRunner;
 
+internal sealed record ThirdPartyHits(int Stubs, int Calls, IReadOnlyList<string> Origins);
+
 internal static class RimRunnerStubProbe
 {
     private const int FramesShown = 4;
@@ -46,31 +48,49 @@ internal static class RimRunnerStubProbe
     internal static List<string> FormatRestLines(IReadOnlyList<(string? CaseId, string Text, string? Origin, int Count)> entries)
     {
         List<string> lines = [];
-        int thirdPartyStubs = 0;
-        int thirdPartyCalls = 0;
-        SortedSet<string> thirdPartyOrigins = new(RimRunnerOrigin.Comparer);
-        foreach ((string? caseId, string text, string? origin, int count) in entries)
+        foreach (var (caseId, text, origin, _) in entries)
         {
-            if (caseId == null && origin != null
-                && origin.StartsWith(RimRunnerOrigin.ModPrefix, StringComparison.OrdinalIgnoreCase))
+            if (caseId == null && IsThirdParty(origin))
             {
-                thirdPartyStubs++;
-                thirdPartyCalls += count;
-                thirdPartyOrigins.Add(origin);
                 continue;
             }
 
             lines.Add(caseId == null ? text : caseId + " " + text);
         }
 
-        if (thirdPartyStubs > 0)
+        ThirdPartyHits thirdParty = SummarizeThirdParty(entries);
+        if (thirdParty.Stubs > 0)
         {
-            lines.Add("窗外第三方 mod 命中 " + thirdPartyStubs + " 个空桩（共 " + thirdPartyCalls
-                      + " 次；来源：" + string.Join("、", thirdPartyOrigins) + "）");
+            lines.Add("窗外第三方 mod 命中 " + thirdParty.Stubs + " 个空桩（共 " + thirdParty.Calls
+                      + " 次；来源：" + string.Join("、", thirdParty.Origins) + "）");
         }
 
         return lines;
     }
+
+    internal static ThirdPartyHits SummarizeThirdParty(
+        IReadOnlyList<(string? CaseId, string Text, string? Origin, int Count)> entries)
+    {
+        int stubs = 0;
+        int calls = 0;
+        SortedSet<string> origins = new(RimRunnerOrigin.Comparer);
+        foreach ((string? caseId, string _, string? origin, int count) in entries)
+        {
+            if (caseId != null || !IsThirdParty(origin))
+            {
+                continue;
+            }
+
+            stubs++;
+            calls += count;
+            origins.Add(origin!);
+        }
+
+        return new ThirdPartyHits(stubs, calls, origins.ToArray());
+    }
+
+    private static bool IsThirdParty(string? origin) =>
+        origin != null && origin.StartsWith(RimRunnerOrigin.ModPrefix, StringComparison.OrdinalIgnoreCase);
 
     internal static List<string> Consume(string caseId, string stubName)
     {

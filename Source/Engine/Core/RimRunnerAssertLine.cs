@@ -7,6 +7,10 @@ internal static class RimRunnerAssertLine
     public const string AllTraversed = "全部被遍历";
     public const string RosterTraversed = "名册全部被遍历";
 
+    internal const string NoScanResult = "offenders 为 null：扫描没有交出结果";
+
+    internal static string OffendingCount(int count) => count + " 项违例";
+
     public static bool IsFixed(string? expected) =>
         expected is True or NoneOffending or AllTraversed or RosterTraversed;
 

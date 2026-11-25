@@ -5,6 +5,7 @@ internal static class RimRunnerOrigin
     internal const string Case = "用例";
     internal const string Product = "产品";
     internal const string Vanilla = "vanilla";
+    internal const string Engine = "引擎";
     internal const string ModPrefix = "mod:";
     internal const string AssemblyPrefix = "程序集:";
 
@@ -25,7 +26,7 @@ internal static class RimRunnerOrigin
     {
         if (assembly == typeof(RimRunnerOrigin).Assembly)
         {
-            return "引擎";
+            return Engine;
         }
 
         return assembly == RimRunnerProduct.TestAssembly ? "测试程序集" : OfAssembly(assembly);

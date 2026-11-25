@@ -1,6 +1,6 @@
 namespace RimRunner;
 
-/// <summary>老年病跳过：跳过时 vanilla 生成期老年病与旧伤一条不长，隔离生成返回后即停。</summary>
+/// <summary>老年病跳过：跳过时 vanilla 生成期老年病与旧伤一条不长，隔离生成返回后即停止。</summary>
 /// <remarks>只验无派系的 vanilla Colonist：GenerateIsolatedPawn 生成期间跳过生效，跳过时一条不长，嵌套时内层退出不关外层，GenerateIsolatedPawn 返回后不再跳过。</remarks>
 [RimRunnerEnvCheck(RimRunnerFacility.OldAgeInjurySkip)]
 public class Case_OldAgeInjurySkip : RimRunnerRegression

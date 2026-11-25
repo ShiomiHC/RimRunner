@@ -72,14 +72,7 @@ public static class ShardForecast
         IReadOnlyList<ShardGroupQueue.Claim> claims, IReadOnlyList<ShardGroupManifest.ShardEntry> shards,
         DateTimeOffset? drainedAt, int unclaimed)
     {
-        try
-        {
-            if (ObservationSignatures.TablePath() == null) return;
-        }
-        catch (ObservationCore.SignatureException)
-        {
-            return;
-        }
+        if (!ObservationMarks.MarksEnabled()) return;
 
         CalibrationLines(prepares, claims, shards, drainedAt, unclaimed, ShardChildSpec.Tag).ForEach(CliLog.Info);
     }

@@ -102,7 +102,7 @@ public static class GameArgsBuilder
         if (!string.IsNullOrEmpty(experiments))
             args.Add($"-{RimRunner.RimRunnerEngineArgs.Experiments}={experiments}");
 
-        if (ObservationSignatures.MarksEnabled())
+        if (ObservationMarks.MarksEnabled())
             args.Add($"-{RimRunner.RimRunnerEngineArgs.ObservationMarks}");
 
         if (!string.IsNullOrEmpty(compatOff))

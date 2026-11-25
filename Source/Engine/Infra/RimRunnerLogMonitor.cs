@@ -59,7 +59,15 @@ public static class RimRunnerLogMonitor
     private static readonly List<string> startupEngineFaults = [];
 
     private static bool capLatched;
-    private static readonly List<RimRunnerFindingEntry> capHits = [];
+
+    internal sealed class CapHit
+    {
+        internal string? Owner;
+        internal bool InWindow;
+        internal required RimRunnerFindingEntry Entry;
+    }
+
+    private static readonly List<CapHit> capHits = [];
     private static int messageCountPeak;
     private static bool countForgedBySelfTest;
 
@@ -855,9 +863,14 @@ public static class RimRunnerLogMonitor
             string where = activeCapture != null
                 ? (activeCapture.Owner ?? "未具名窗") + " 窗内"
                 : GapLabel(null);
-            capHits.Add(RimRunnerFindingEntry.Of(null, where, "vanilla 日志累计到 " + VanillaMessageCap + " 条封顶，"
-                        + (activeCapture != null ? "到下一泵复位之前" : "到下一个窗开窗之前")
-                        + " Debug.* 输出的错误级日志（UnityDebug）不可见（Verse.Log.Error 仍在收）"));
+            capHits.Add(new CapHit
+            {
+                Owner = activeCapture?.Owner,
+                InWindow = activeCapture != null,
+                Entry = RimRunnerFindingEntry.Of(null, where, "vanilla 日志累计到 " + VanillaMessageCap + " 条封顶，"
+                    + (activeCapture != null ? "到下一泵复位之前" : "到下一个窗开窗之前")
+                    + " Debug.* 输出的错误级日志（UnityDebug）不可见（Verse.Log.Error 仍在收）")
+            });
         }
     }
 
@@ -911,7 +924,7 @@ public static class RimRunnerLogMonitor
         {
             lines = [.. gapLines];
             count = gapCount;
-            hits = [.. capHits];
+            hits = [.. capHits.Select(hit => hit.Entry)];
             sentinels = [.. gapSentinels];
             sentinelWarnings = [.. gapSentinelWarnings];
             engineFaults = [.. gapEngineFaults];
@@ -1009,7 +1022,7 @@ public static class RimRunnerLogMonitor
         }
     }
 
-    internal static List<string> TakeCapHitsSince(int mark)
+    internal static List<CapHit> TakeCapHitsSince(int mark)
     {
         lock (SyncRoot)
         {
@@ -1018,7 +1031,7 @@ public static class RimRunnerLogMonitor
                 return [];
             }
 
-            List<string> taken = [.. capHits.GetRange(mark, capHits.Count - mark).Select(hit => hit.Line)];
+            List<CapHit> taken = [.. capHits.GetRange(mark, capHits.Count - mark)];
             capHits.RemoveRange(mark, capHits.Count - mark);
             return taken;
         }

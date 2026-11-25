@@ -64,7 +64,7 @@ internal sealed class InstanceLink
     private readonly Lock holdGate = new();
     private DateTimeOffset? holdUntil;
 
-    internal sealed record LogTail(string Path, ObservationSignatures.TailWatch? Watch, string? Tag = null);
+    internal sealed record LogTail(string Path, ObservationMarks.TailWatch? Watch, string? Tag = null);
 
     private InstanceLink(int number, TimeSpan idleLimit, string playerLogPath, string outputRoot,
         Action<string>? recordStop, bool survivesDrain)

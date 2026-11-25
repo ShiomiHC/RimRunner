@@ -84,8 +84,9 @@ internal static class RimRunnerCurrentMapProbe
     internal static List<string> Consume(string caseId, string readerContains) =>
         hits.Consume(caseId, text => text.Contains(readerContains));
 
-    internal static List<string> ConsumeCounted(string caseId, string readerContains) =>
-        hits.ConsumeCounted(caseId, text => text.Contains(readerContains));
+    internal static List<(string Text, string? Origin, int Count, bool Rerouted)> ConsumeReads(string caseId, string readerContains) =>
+        [.. hits.ConsumeHits(caseId, text => text.Contains(readerContains)).Select(hit =>
+            (hit.Text, hit.Origin, hit.Count, hit.Key.StartsWith(caseId + ReroutedInfix, StringComparison.Ordinal)))];
 
     internal static HashSet<string>? SwapAckedOrigins(HashSet<string>? origins)
     {
@@ -94,8 +95,8 @@ internal static class RimRunnerCurrentMapProbe
         return previous;
     }
 
-    internal static List<string> ConsumeBlind(string caseId, string textContains) =>
-        blind.ConsumeCounted(caseId, text => text.Contains(textContains));
+    internal static List<(string Text, int Count)> ConsumeBlind(string caseId, BlindReason reason) =>
+        blind.ConsumeKey(caseId + (reason == BlindReason.Generating ? GeneratingSuffix : CaptureLimitSuffix));
 
     internal static void Enter(bool view)
     {
@@ -128,7 +129,7 @@ internal static class RimRunnerCurrentMapProbe
 
         if (RimRunnerIsolatedMap.Generating)
         {
-            NoteBlind("|gen", "用例体内生成独立小图期间读当前地图，未观测（读点落在生图；地图组件初始化读错图在这一段看不见）");
+            NoteBlind(BlindReason.Generating, "用例体内生成独立小图期间读当前地图，未观测（读点落在生图；地图组件初始化读错图在这一段看不见）");
             return;
         }
 
@@ -139,18 +140,19 @@ internal static class RimRunnerCurrentMapProbe
 
         if (seenReaders.Count >= captureLimit)
         {
-            NoteBlind("|cap", "截栈达上限（" + captureLimit + " 个不同读者帧），其后的读当前地图未观测");
+            NoteBlind(BlindReason.CaptureLimit, "截栈达上限（" + captureLimit + " 个不同读者帧），其后的读当前地图未观测");
             return;
         }
 
         Record(new StackTrace(2, false));
     }
 
-    private static void NoteBlind(string suffix, string text)
+    private static void NoteBlind(BlindReason reason, string text)
     {
-        if (!blind.Bump(armedId + suffix))
+        string key = armedId + (reason == BlindReason.Generating ? GeneratingSuffix : CaptureLimitSuffix);
+        if (!blind.Bump(key))
         {
-            blind.Add(armedId + suffix, armedId, text);
+            blind.Add(key, armedId, text);
         }
     }
 
@@ -214,7 +216,7 @@ internal static class RimRunnerCurrentMapProbe
         IEnumerable<string> chain = frames.Take(Math.Min(entry + 1, FramesShown)).Select(Describe);
         hits.Add(key, armedId, RimRunnerOrigin.Lead(origin) + (readingView ? ViewGetter + " ← " : "") + string.Join(" ← ", chain)
                                + (entry + 1 > FramesShown ? " ← … ← " + caseEntry : ""),
-            readingView ? "；视野取自主图" : "", origin);
+            readingView ? ViewTail : "", origin);
         if (armedOrigins is { Count: > 0 })
         {
             RimRunnerCurrentMapReroute.Consider(frames[0], origin, armedOrigins, armedThread);
@@ -270,6 +272,7 @@ internal static class RimRunnerCurrentMapProbe
         internal required string Anchor;
         internal required string Signature;
         internal required string Chain;
+        internal required string Carrier;
         internal required bool View;
         internal readonly List<string> Cases = [];
         internal int Count;
@@ -293,7 +296,8 @@ internal static class RimRunnerCurrentMapProbe
 
             chain = new EnvChain
             {
-                Origin = origin, Anchor = anchor, Signature = signature, Chain = string.Join(" ← ", shown), View = readingView
+                Origin = origin, Anchor = anchor, Signature = signature, Chain = string.Join(" ← ", shown),
+                Carrier = carrier, View = readingView
             };
             envChains[signature] = chain;
             envOrder.Add(chain);
@@ -322,7 +326,18 @@ internal static class RimRunnerCurrentMapProbe
         return drained;
     }
 
-    internal static List<(string Text, List<string> Cases)> ConsumeEnvChains(string anchorContains)
+    internal sealed class EnvChainView
+    {
+        internal required string Text;
+        internal required string Origin;
+        internal required string Anchor;
+        internal required string Chain;
+        internal required string Carrier;
+        internal required List<string> Cases;
+        internal required int Count;
+    }
+
+    internal static List<EnvChainView> ConsumeEnvChains(string anchorContains)
     {
         List<EnvChain> taken = envOrder.Where(chain => chain.Anchor.Contains(anchorContains)).ToList();
         foreach (EnvChain chain in taken)
@@ -331,7 +346,11 @@ internal static class RimRunnerCurrentMapProbe
             envOrder.Remove(chain);
         }
 
-        return [.. taken.Select(chain => (Describe(chain), chain.Cases.ToList()))];
+        return [.. taken.Select(chain => new EnvChainView
+        {
+            Text = Describe(chain), Origin = chain.Origin, Anchor = chain.Anchor, Chain = chain.Chain,
+            Carrier = chain.Carrier, Cases = chain.Cases.ToList(), Count = chain.Count
+        })];
     }
 
     [ThreadStatic] internal static int rerouteSite;
@@ -344,18 +363,30 @@ internal static class RimRunnerCurrentMapProbe
             return false;
         }
 
-        string key = armedId + "|rr|" + (readingView ? ViewGetter + "|" : "") + site;
+        string key = armedId + ReroutedInfix + (readingView ? ViewGetter + "|" : "") + site;
         if (!hits.Bump(key))
         {
             hits.Add(key, armedId, RimRunnerOrigin.Lead(origin) + (readingView ? ViewGetter + " ← " : "") + reader
                                    + "（已改道，只计次）",
-                readingView ? "；视野取自主图" : "", origin);
+                readingView ? ViewTail : "", origin);
         }
 
         return true;
     }
 
-    private const string ViewGetter = "CameraDriver.CurrentViewRect";
+    internal enum BlindReason
+    {
+        Generating,
+        CaptureLimit
+    }
+
+    private const string ReroutedInfix = "|rr|";
+    private const string GeneratingSuffix = "|gen";
+    private const string CaptureLimitSuffix = "|cap";
+
+    internal const string ViewGetter = "CameraDriver.CurrentViewRect";
+
+    internal const string ViewTail = "；视野取自主图";
 
     internal static readonly IReadOnlyCollection<MethodBase> Getters =
     [

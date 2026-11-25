@@ -35,7 +35,7 @@ public class Case_DaylightPin : RimRunnerRegression
             RimRunnerExpectationSource.Literal(Source));
         float fresh = SkyGlowOf(new SkyManager(ctx.Map));
         ctx.AssertTrue("DAY1-NewMap", fresh == 1f,
-            "用例期新建的图天光=" + fresh.ToString("0.###") + "（应 1）：新图在第一帧之前漆黑",
+            "用例期新建的图天光=" + fresh.ToString("0.###") + "（应 1）",
             RimRunnerExpectationSource.Literal(Source));
 
         using (ctx.AllowNightSky())
@@ -43,7 +43,7 @@ public class Case_DaylightPin : RimRunnerRegression
             ctx.Map.skyManager.ForceSetCurSkyGlow(0f);
             ctx.AssertTrue("DAY1-NightScope", ctx.Map.skyManager.CurSkyGlow == 0f,
                 "ctx.AllowNightSky 作用域内把天光设为 0 后读到 " + ctx.Map.skyManager.CurSkyGlow.ToString("0.###")
-                + "（应 0）：作用域内仍钉着正午",
+                + "（应 0）",
                 RimRunnerExpectationSource.Literal(Source));
         }
 

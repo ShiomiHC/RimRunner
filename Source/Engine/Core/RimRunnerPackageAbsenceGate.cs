@@ -20,9 +20,31 @@ internal static class RimRunnerPackageAbsenceGate
         public bool ShowcaseReached;
     }
 
+    internal sealed class LoadTimeHit(LoadTimeKind kind, Type type, string? member, string package)
+    {
+        internal readonly LoadTimeKind Kind = kind;
+        internal readonly Type Type = type;
+        internal readonly string? Member = member;
+        internal readonly string Package = package;
+
+        internal string Text => Kind switch
+        {
+            LoadTimeKind.Base => Type.FullName + " 基类（" + Package + "）",
+            LoadTimeKind.Interface => Type.FullName + " 接口 " + Member + "（" + Package + "）",
+            LoadTimeKind.ValueField => Type.FullName + " 值类型字段 " + Member + "（" + Package + "）",
+        };
+    }
+
+    internal enum LoadTimeKind
+    {
+        Base,
+        Interface,
+        ValueField,
+    }
+
     internal sealed class Result
     {
-        public readonly List<string> LoadTime = [];
+        public readonly List<LoadTimeHit> LoadTime = [];
         public readonly List<Hit> Unlabeled = [];
         public readonly List<Hit> SelfGuarded = [];
         public readonly List<Hit> ModsConfigActive = [];
@@ -363,7 +385,7 @@ internal static class RimRunnerPackageAbsenceGate
             findings.Add(RimRunnerFinding.Warning(null, RimRunnerWarningKey.AbsentableLoadTime,
                 "测试程序集的基类、接口或值类型字段用下列类型，本进程里提供它们所在程序集的只有括号里的可缺席包。"
                 + "缺这个程序集的名单下整个测试程序集被剔除：\n  "
-                + string.Join("\n  ", result.LoadTime)));
+                + string.Join("\n  ", result.LoadTime.Select(hit => hit.Text))));
         }
 
         void PerOwner(IEnumerable<Hit> hits, Func<Type, List<Hit>, RimRunnerFinding[]> make)
@@ -497,12 +519,12 @@ internal static class RimRunnerPackageAbsenceGate
 
     private static bool IsCompilerGenerated(Type type) => type.Name.StartsWith("<", StringComparison.Ordinal);
 
-    private static void CollectLoadTime(Type type, Func<Type, string?> packageOf, List<string> sink)
+    private static void CollectLoadTime(Type type, Func<Type, string?> packageOf, List<LoadTimeHit> sink)
     {
         string? hit = Hits(type.BaseType, packageOf);
         if (hit != null)
         {
-            sink.Add(type.FullName + " 基类（" + hit + "）");
+            sink.Add(new LoadTimeHit(LoadTimeKind.Base, type, null, hit));
         }
 
         foreach (Type iface in type.GetInterfaces())
@@ -510,7 +532,7 @@ internal static class RimRunnerPackageAbsenceGate
             hit = Hits(iface, packageOf);
             if (hit != null)
             {
-                sink.Add(type.FullName + " 接口 " + iface.Name + "（" + hit + "）");
+                sink.Add(new LoadTimeHit(LoadTimeKind.Interface, type, iface.Name, hit));
             }
         }
 
@@ -524,7 +546,7 @@ internal static class RimRunnerPackageAbsenceGate
             hit = Hits(field.FieldType, packageOf);
             if (hit != null)
             {
-                sink.Add(type.FullName + " 值类型字段 " + field.Name + "（" + hit + "）");
+                sink.Add(new LoadTimeHit(LoadTimeKind.ValueField, type, field.Name, hit));
             }
         }
     }

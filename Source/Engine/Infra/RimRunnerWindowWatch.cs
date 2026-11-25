@@ -26,6 +26,9 @@ internal static class Patch_WindowStack_Add_RimRunnerWindowWatch
 
 internal static class RimRunnerWindowWatch
 {
+    internal const string ForcePauseFlag = "forcePause";
+    internal const string AbsorbInputFlag = "absorbInput";
+
     private sealed class Push
     {
         internal required Window Window;
@@ -38,15 +41,42 @@ internal static class RimRunnerWindowWatch
         internal bool Entered;
         internal bool StrayReported;
         internal bool Advancing;
-        internal string? Pusher;
+        internal string? PusherOwner;
+        internal string? PusherType;
+        internal string? PusherMethod;
+        internal WindowCloseOutcome CloseOutcome;
 
         internal bool OnStack(WindowStack stack) =>
             Stack != null && Stack.TryGetTarget(out WindowStack? pushed) && ReferenceEquals(pushed, stack);
     }
 
+    internal enum WindowCloseOutcome
+    {
+        NotClosed,
+        ClosedByEngine,
+        StillOnStack,
+        Threw
+    }
+
+    internal sealed class CasePush
+    {
+        internal required string TypeName;
+        internal required IReadOnlyList<string> Flags;
+        internal int Tick;
+        internal bool Advancing;
+        internal string? PusherOwner;
+        internal string? PusherType;
+        internal string? PusherMethod;
+        internal required string Origin;
+        internal bool Entered;
+        internal bool Open;
+        internal WindowCloseOutcome CloseOutcome;
+    }
+
     internal sealed class StartPreview
     {
         internal string? StartLine;
+        internal required List<Window> Listed;
         internal required List<Window> Ambient;
         internal required List<Window> Stray;
     }
@@ -57,6 +87,7 @@ internal static class RimRunnerWindowWatch
         internal string? StartLine => Entries.Count == 0
             ? null
             : string.Join("；", Entries.Select(entry => entry.Key + "：" + entry.Value));
+        internal readonly List<Push> Listed = [];
         internal readonly List<Push> Ambient = [];
         internal readonly List<Push> Stray = [];
     }
@@ -88,6 +119,7 @@ internal static class RimRunnerWindowWatch
             return;
         }
 
+        (string Owner, string Type, string Method)? pusher = DirectPusher();
         Push push = new()
         {
             Window = window,
@@ -99,7 +131,9 @@ internal static class RimRunnerWindowWatch
             Stack = new System.WeakReference<WindowStack>(stack),
             Entered = entered,
             Advancing = RimRunnerTimeDriver.Advancing,
-            Pusher = DirectPusher()
+            PusherOwner = pusher?.Owner,
+            PusherType = pusher?.Type,
+            PusherMethod = pusher?.Method
         };
 
         if (push.Entered)
@@ -148,6 +182,7 @@ internal static class RimRunnerWindowWatch
         return new StartPreview
         {
             StartLine = scan.StartLine,
+            Listed = scan.Listed.Select(push => push.Window).ToList(),
             Ambient = scan.Ambient.Select(push => push.Window).ToList(),
             Stray = scan.Stray.Select(push => push.Window).ToList()
         };
@@ -167,6 +202,7 @@ internal static class RimRunnerWindowWatch
                 continue;
             }
 
+            scan.Listed.Add(push);
             scan.Entries.Add(new KeyValuePair<string, string>(Label(window, push.TypeName) + " " + DescribeOrigin(push),
                 IsBlocking(window) ? "开始执行时已在栈上。" + BlockingConsequence : "开始执行时已在栈上"));
             if (!push.FromCase && !push.StrayReported)
@@ -211,7 +247,7 @@ internal static class RimRunnerWindowWatch
         {
             foreach (Push push in residual.Where(push => IsBlocking(push.Window)))
             {
-                closed[push] = Close(push.Window);
+                closed[push] = Close(push);
             }
         }
 
@@ -229,27 +265,55 @@ internal static class RimRunnerWindowWatch
         }
     }
 
-    private static string Close(Window window)
+    private static string Close(Push push)
     {
         try
         {
-            Find.WindowStack.TryRemove(window, doCloseSound: false);
+            Find.WindowStack.TryRemove(push.Window, doCloseSound: false);
         }
         catch (Exception exception)
         {
+            push.CloseOutcome = WindowCloseOutcome.Threw;
             return "引擎关窗时抛出 " + exception.GetType().Name + "：" + exception.Message;
         }
 
-        return IsOpen(window) ? "引擎关窗后仍在栈上" : "已由引擎关闭";
+        if (IsOpen(push.Window))
+        {
+            push.CloseOutcome = WindowCloseOutcome.StillOnStack;
+            return "引擎关窗后仍在栈上";
+        }
+
+        push.CloseOutcome = WindowCloseOutcome.ClosedByEngine;
+        return "已由引擎关闭";
+    }
+
+    internal static IReadOnlyList<CasePush> PeekCasePushes()
+    {
+        return casePushes.Select(push => new CasePush
+        {
+            TypeName = push.TypeName,
+            Flags = FlagNames(push.Window),
+            Tick = push.Tick,
+            Advancing = push.Advancing,
+            PusherOwner = push.PusherOwner,
+            PusherType = push.PusherType,
+            PusherMethod = push.PusherMethod,
+            Origin = push.Origin,
+            Entered = push.Entered,
+            Open = IsOpen(push.Window),
+            CloseOutcome = push.CloseOutcome
+        }).ToList();
     }
 
     private static string Source(Push push)
     {
-        string pusher = push.Pusher ?? "（调用方未获取）";
+        string pusher = push.PusherType == null
+            ? "（调用方未获取）"
+            : push.PusherOwner + " 的 " + push.PusherType + "." + push.PusherMethod;
         return (push.Advancing ? "推 tick 期间" : "未推 tick 时") + "由 " + pusher + " 推入";
     }
 
-    private static string? DirectPusher()
+    private static (string Owner, string Type, string Method)? DirectPusher()
     {
         System.Diagnostics.StackFrame[] frames = new System.Diagnostics.StackTrace(1, false).GetFrames();
         if (frames == null)
@@ -274,7 +338,7 @@ internal static class RimRunnerWindowWatch
                 type = type.DeclaringType;
             }
 
-            return Owner(type.Assembly) + " 的 " + type.Name + "." + method.Name;
+            return (Owner(type.Assembly), type.Name, method.Name);
         }
 
         return null;
@@ -379,19 +443,25 @@ internal static class RimRunnerWindowWatch
         return IsOpen(push.Window) ? "仍打开" : "已关闭";
     }
 
-    private static string Label(Window window, string typeName)
+    private static List<string> FlagNames(Window window)
     {
         List<string> flags = new(2);
         if (window.forcePause)
         {
-            flags.Add("forcePause");
+            flags.Add(ForcePauseFlag);
         }
 
         if (window.absorbInputAroundWindow)
         {
-            flags.Add("absorbInput");
+            flags.Add(AbsorbInputFlag);
         }
 
+        return flags;
+    }
+
+    private static string Label(Window window, string typeName)
+    {
+        List<string> flags = FlagNames(window);
         return flags.Count == 0 ? typeName : typeName + "［" + string.Join("·", flags) + "］";
     }
 

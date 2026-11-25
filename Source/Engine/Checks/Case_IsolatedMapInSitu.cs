@@ -4,7 +4,7 @@ using RimWorld.Planet;
 namespace RimRunner;
 
 /// <summary>缺省独立小图的现场：主图冻结、交付粒度、当前地图探针与家园挑图。</summary>
-/// <remarks>只验缺省上独立小图的 World 级现场：主图零推进、小图按 15 tick 一批，冻结图落物探针记一行，当前地图探针记读点、另记未观测段，Find.AnyPlayerHomeMap 一族只挑领着的图，主图 pawn 不收新记忆。</remarks>
+/// <remarks>只验缺省上独立小图的 World 级现场：主图零推进、小图按 15 tick 一批，冻结图落物探针记一行，当前地图探针记读点、另记未观测段，Find.AnyPlayerHomeMap 一族只挑本用例领到的小图，主图 pawn 不收新记忆。</remarks>
 [RimRunnerEnvCheck(RimRunnerFacility.IsolatedMap)]
 [RimRunnerAcknowledge(RimRunnerWarningKey.TickDeliveryGap, "ISOMAP2-MainFrozen 断言的就是冻结主图上的 pawn 整窗不经 DoTick")]
 public class Case_IsolatedMapInSitu : RimRunnerRegression
@@ -88,7 +88,7 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
             "推 " + Ticks + " tick 后小图上的 pawn 被推进 " + liveLedger + "（应约 " + Ticks + "）", RimRunnerExpectationSource.Literal(Source));
         ctx.AssertTrue("ISOMAP2-IsolatedChunk15",
             liveLedger.Chunks <= Ticks / RimRunnerTickDelivery.VanillaMaxChunkTicks + 1,
-            "推 " + Ticks + " tick 后小图上的 pawn 被推进 " + liveLedger + "：每批不足 15 tick，小图被当成相机所在的当前地图",
+            "推 " + Ticks + " tick 后小图上的 pawn 被推进 " + liveLedger + "（应每批 " + RimRunnerTickDelivery.VanillaMaxChunkTicks + " tick）",
             RimRunnerExpectationSource.Literal(Source));
 
         RunCurrentMapProbe(ctx, isolated);
@@ -107,12 +107,12 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
             idle > 0 && spare.IsPlayerHome
             && mine.Contains(any) && homes.Count == mine.Count && homes.All(mine.Contains) && randomPicks.All(mine.Contains)
             && main.IsPlayerHome,
-            "本用例领到 " + string.Join("、", mine.Select(map => map.ToString())) + "，池里另闲着 " + idle + " 张（含刚交回的 " + spare
+            "本用例领到 " + string.Join("、", mine.Select(map => map.ToString())) + "，池里另有 " + idle + " 张空闲（含刚交回的 " + spare
             + "，挑图之外是家园=" + spare.IsPlayerHome + "）；"
             + "Find.AnyPlayerHomeMap=" + (any?.ToString() ?? "null") + "，PlayerHomeMaps=" + string.Join("、", homes.Select(map => map.ToString()))
             + "，RandomPlayerHomeMap 20 次挑到 " + string.Join("、", randomPicks.Distinct().Select(map => map?.ToString() ?? "null"))
             + "，挑图之外主图是家园=" + main.IsPlayerHome
-            + "（应只挑到本用例领到的小图，挑图之外主图与闲着的图仍为家园）",
+            + "（应只挑到本用例领到的小图，挑图之外主图与空闲的图仍为家园）",
             RimRunnerExpectationSource.Literal(HomePickerSource));
     }
 
@@ -142,25 +142,27 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
         List<string> viewBare = RimRunnerCurrentMapProbe.Consume(Id, nameof(GenView.RandomPositionOnOrNearScreen));
         _ = ThinRead();
         List<string> thin = RimRunnerCurrentMapProbe.Consume(Id, nameof(ThinRead));
-        List<string> view = viewBare.Where(line => line.StartsWith("[vanilla] CameraDriver.CurrentViewRect ← GenView.", StringComparison.Ordinal)).ToList();
+        List<string> view = viewBare.Where(line => line.StartsWith(RimRunnerOrigin.Lead(RimRunnerOrigin.Vanilla) + RimRunnerCurrentMapProbe.ViewGetter, StringComparison.Ordinal)
+                                                  && line.Contains(nameof(GenView.RandomPositionOnOrNearScreen), StringComparison.Ordinal)).ToList();
         ctx.AssertTrue("ISOMAP2-ProbeBorrowedSilent", borrowed.Count == 0,
             "ctx.AsCurrentMap 作用域内读当前地图，报告已记 " + borrowed.Count + " 行（应 0）", RimRunnerExpectationSource.Literal(ProbeSource));
         ctx.AssertTrue("ISOMAP2-ProbeHit", bare.Count == 1,
             "作用域外经 Designator.Map 读当前地图，报告已记 " + bare.Count + " 行（应 1）",
             RimRunnerExpectationSource.Literal(ProbeSource));
         ctx.AssertTrue("ISOMAP2-ProbeOriginVanilla",
-            bare.Count == 1 && bare[0].StartsWith("[vanilla] Designator.get_Map", StringComparison.Ordinal),
-            "读者在 vanilla 的那一行没标 [vanilla]：" + string.Join(" / ", bare),
+            bare.Count == 1 && bare[0].StartsWith(RimRunnerOrigin.Lead(RimRunnerOrigin.Vanilla) + "Designator.get_Map", StringComparison.Ordinal),
+            "读者为 vanilla 的行未标 [vanilla]：" + string.Join(" / ", bare),
             RimRunnerExpectationSource.Literal(ProbeSource));
         ctx.AssertTrue("ISOMAP2-ProbeViewBorrowedSilent", viewBorrowed.Count == 0,
             "ctx.AsCurrentMap 作用域内经 GenView 读视野矩形与当前地图，报告已记 " + viewBorrowed.Count + " 行（应 0）",
             RimRunnerExpectationSource.Literal(ProbeSource));
-        ctx.AssertTrue("ISOMAP2-ProbeViewHit", view.Count == 1 && view[0].Contains("视野取自主图"),
-            "作用域外经 GenView 读视野矩形，标 CameraDriver.CurrentViewRect、带「视野取自主图」的行有 " + view.Count
-            + " 行（应 1）：" + string.Join(" / ", viewBare),
+        ctx.AssertTrue("ISOMAP2-ProbeViewHit",
+            view.Count == 1 && view[0].Contains(RimRunnerCurrentMapProbe.ViewTail, StringComparison.Ordinal),
+            "作用域外经 GenView 读视野矩形，标 " + RimRunnerCurrentMapProbe.ViewGetter + "、带「" + RimRunnerCurrentMapProbe.ViewTail
+            + "」的行有 " + view.Count + " 行（应 1）：" + string.Join(" / ", viewBare),
             RimRunnerExpectationSource.Literal(ProbeSource));
         ctx.AssertTrue("ISOMAP2-ProbeTailCallKept",
-            thin.Count == 1 && thin[0].StartsWith("[用例] " + nameof(Case_IsolatedMapInSitu) + "." + nameof(ThinRead), StringComparison.Ordinal),
+            thin.Count == 1 && thin[0].StartsWith(RimRunnerOrigin.Lead(RimRunnerOrigin.Case) + nameof(Case_IsolatedMapInSitu) + "." + nameof(ThinRead), StringComparison.Ordinal),
             "作用域外经一个以读当前地图收尾、按优化档编译的方法读当前地图，读者是该方法的行有 " + thin.Count + " 行（应 1）："
             + string.Join(" / ", thin),
             RimRunnerExpectationSource.Literal(ProbeSource));
@@ -172,7 +174,7 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
         });
         List<string> burstCallback = RimRunnerCurrentMapProbe.Consume(Id, nameof(ThinRead));
         ctx.AssertTrue("ISOMAP2-ProbeBurstCallback",
-            burstCallback.Count == 1 && burstCallback[0].StartsWith("[用例] " + nameof(Case_IsolatedMapInSitu) + "." + nameof(ThinRead), StringComparison.Ordinal),
+            burstCallback.Count == 1 && burstCallback[0].StartsWith(RimRunnerOrigin.Lead(RimRunnerOrigin.Case) + nameof(Case_IsolatedMapInSitu) + "." + nameof(ThinRead), StringComparison.Ordinal),
             "AdvanceBurst 回调内读当前地图，读者是 ThinRead 的行有 " + burstCallback.Count + " 行（应 1）："
             + string.Join(" / ", burstCallback),
             RimRunnerExpectationSource.Literal(ProbeSource));
@@ -183,17 +185,19 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
     private void RunBlindProbe(RimRunnerRegressionContext ctx)
     {
         Designator designator = new Designator_AreaBuildRoof();
-        RimRunnerCurrentMapProbe.ConsumeBlind(Id, "生成独立小图期间");
+        RimRunnerCurrentMapProbe.ConsumeBlind(Id, RimRunnerCurrentMapProbe.BlindReason.Generating);
         RimRunnerIsolatedMap.RunAsGeneratingForSelfTest(() =>
         {
             _ = designator.Map;
             _ = designator.Map;
         });
         List<string> genRead = RimRunnerCurrentMapProbe.Consume(Id, "Designator.get_Map");
-        List<string> genBlind = RimRunnerCurrentMapProbe.ConsumeBlind(Id, "生成独立小图期间");
-        ctx.AssertTrue("ISOMAP2-ProbeBlindGen", genRead.Count == 0 && genBlind.Count == 1 && genBlind[0].EndsWith(" ×2", StringComparison.Ordinal),
-            "生图窗口里作用域外读两次当前地图：读点 " + genRead.Count + " 行（应 0），未观测 " + genBlind.Count + " 行（应 1，带 ×2）："
-            + string.Join(" / ", genBlind),
+        List<(string Text, int Count)> genBlind =
+            RimRunnerCurrentMapProbe.ConsumeBlind(Id, RimRunnerCurrentMapProbe.BlindReason.Generating);
+        ctx.AssertTrue("ISOMAP2-ProbeBlindGen",
+            genRead.Count == 0 && genBlind.Count == 1 && genBlind[0].Count == 2,
+            "生图窗口里作用域外读两次当前地图：读点 " + genRead.Count + " 行（应 0），未观测 " + genBlind.Count
+            + " 行（应 1，次数 2）：" + string.Join(" / ", genBlind.Select(entry => entry.Text + " ×" + entry.Count)),
             RimRunnerExpectationSource.Literal(BlindSource));
 
         for (int i = 0; i < BlindReads; i++)
@@ -202,9 +206,10 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
         }
 
         RimRunnerCurrentMapProbe.Consume(Id, "Designator.get_Map");
-        List<string> sameReaderBlind = RimRunnerCurrentMapProbe.ConsumeBlind(Id, "截栈达上限");
+        List<(string Text, int Count)> sameReaderBlind =
+            RimRunnerCurrentMapProbe.ConsumeBlind(Id, RimRunnerCurrentMapProbe.BlindReason.CaptureLimit);
         ctx.AssertTrue("ISOMAP2-ProbeSameReaderNoBlind", sameReaderBlind.Count == 0,
-            "同一读者连读 " + BlindReads + " 次不应触顶：" + string.Join(" / ", sameReaderBlind),
+            "同一读者连读 " + BlindReads + " 次不应触顶：" + string.Join(" / ", sameReaderBlind.Select(entry => entry.Text)),
             RimRunnerExpectationSource.Literal(BlindSource));
 
         RimRunnerCurrentMapProbe.ClearSeenReadersForSelfTest();
@@ -222,9 +227,11 @@ public class Case_IsolatedMapInSitu : RimRunnerRegression
 
         RimRunnerCurrentMapProbe.Consume(Id, nameof(ThinRead));
         RimRunnerCurrentMapProbe.Consume(Id, "Designator.get_Map");
-        List<string> capBlind = RimRunnerCurrentMapProbe.ConsumeBlind(Id, "截栈达上限");
+        List<(string Text, int Count)> capBlind =
+            RimRunnerCurrentMapProbe.ConsumeBlind(Id, RimRunnerCurrentMapProbe.BlindReason.CaptureLimit);
         ctx.AssertTrue("ISOMAP2-ProbeBlindCap", capBlind.Count == 1,
-            "不同读者帧超过配额，触顶后记下的未观测 " + capBlind.Count + " 行（应 1）：" + string.Join(" / ", capBlind),
+            "不同读者帧超过配额，触顶后记下的未观测 " + capBlind.Count + " 行（应 1）："
+            + string.Join(" / ", capBlind.Select(entry => entry.Text)),
             RimRunnerExpectationSource.Literal(BlindSource));
     }
 

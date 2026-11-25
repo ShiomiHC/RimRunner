@@ -28,28 +28,35 @@ public class Case_StorytellerQueueHold : RimRunnerRegression
 
         QueuedIncident later = Unfireable(Find.TickManager.TicksGame + GenDate.TicksPerDay);
         queue.Add(later);
-        string heldFate = RimRunnerStorytellerQuiesce.Fate(held);
-        string laterFate = RimRunnerStorytellerQuiesce.Fate(later);
-        ctx.AssertTrue("STQ1-Fate", heldFate == "被扣住未发" && laterFate == "清出时未到期",
-            "到期事件=" + heldFate + "（应被扣住未发），远期事件=" + laterFate + "（应清出时未到期）",
+        RimRunnerStorytellerQuiesce.FateKind heldFate = RimRunnerStorytellerQuiesce.Fate(held);
+        RimRunnerStorytellerQuiesce.FateKind laterFate = RimRunnerStorytellerQuiesce.Fate(later);
+        ctx.AssertTrue("STQ1-Fate",
+            heldFate == RimRunnerStorytellerQuiesce.FateKind.HeldDue
+            && laterFate == RimRunnerStorytellerQuiesce.FateKind.NotYetDue,
+            "到期事件=" + heldFate + "（应 HeldDue），远期事件=" + laterFate + "（应 NotYetDue）",
             RimRunnerExpectationSource.Literal(Source));
-        List<string> drained = RimRunnerStorytellerQuiesce.DrainQueued("STQ1-probe");
-        string line = string.Join("|", drained);
-        ctx.AssertTrue("STQ1-Drained", drained.Count == 2
-                                       && drained.All(entry => entry.StartsWith("RaidEnemy 于STQ1 体内入队←Case_StorytellerQueueHold."))
-                                       && queue.Count == 0,
-            "清出的记录=[" + line + "]（应恰两条，都写明本用例体内入队），清后队列剩 " + queue.Count + " 条",
+        List<RimRunnerStorytellerQuiesce.ClearedIncident> drained = RimRunnerStorytellerQuiesce.DrainQueued("STQ1-probe");
+        ctx.AssertTrue("STQ1-Drained",
+            drained.Count == 2
+            && drained.All(entry => entry.DefName == IncidentDefOf.RaidEnemy.defName
+                                    && entry.CaseId == Id && !entry.Teardown
+                                    && entry.Caller.StartsWith(nameof(Case_StorytellerQueueHold) + ".", StringComparison.Ordinal))
+            && queue.Count == 0,
+            "清出的记录=[" + string.Join(" | ", drained.Select(entry => entry.Text("STQ1-probe")))
+            + "]（应恰两条，都写明本用例体内入队），清后队列剩 " + queue.Count + " 条",
             RimRunnerExpectationSource.Literal(Source));
 
         queue.Add(Unfireable());
         RimRunnerStorytellerQuiesce.Ensure("STQ1-next");
-        var between = new List<string>();
-        RimRunnerStorytellerQuiesce.DrainBetween(between);
-        string betweenLine = string.Join("|", between);
-        ctx.AssertTrue("STQ1-EnsureClear", queue.Count == 0 && between.Count == 1
-                                           && betweenLine.Contains("RaidEnemy 于STQ1 体内入队←Case_StorytellerQueueHold.")
-                                           && betweenLine.Contains("STQ1-next 开始执行时清除"),
-            "下一条用例开始执行前清队列后剩 " + queue.Count + " 条，残留记录=[" + betweenLine + "]（应恰一条，写明在哪条用例开始执行时清除）",
+        List<RimRunnerStorytellerQuiesce.BetweenClear> between = RimRunnerStorytellerQuiesce.DrainBetween();
+        ctx.AssertTrue("STQ1-EnsureClear",
+            queue.Count == 0 && between.Count == 1 && between[0].AtStart
+            && between[0].ClearedAt == "STQ1-next"
+            && between[0].Incident.DefName == IncidentDefOf.RaidEnemy.defName
+            && between[0].Incident.CaseId == Id && !between[0].Incident.Teardown
+            && between[0].Incident.Caller.StartsWith(nameof(Case_StorytellerQueueHold) + ".", StringComparison.Ordinal),
+            "下一条用例开始执行前清队列后剩 " + queue.Count + " 条，残留记录=["
+            + string.Join(" | ", between.Select(entry => entry.Text)) + "]（应恰一条，写明在哪条用例开始执行时清除）",
             RimRunnerExpectationSource.Literal(Source));
     }
 

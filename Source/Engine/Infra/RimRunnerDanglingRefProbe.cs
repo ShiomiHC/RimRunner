@@ -37,75 +37,87 @@ internal static class RimRunnerDanglingRefProbe
 
     private const string ProbeBroken = "[engine] 探针失效：";
 
-    internal static List<string> Disarm()
+    internal const string FaultReason = "[engine] 存盘悬空引用探针未生效";
+
+    internal sealed record Unreached(string ThingId, string Path);
+
+    internal sealed class Reading
     {
-        List<string> lines = [];
+        internal readonly List<string> Faults = [];
+        internal readonly List<string> Discarded = [];
+        internal List<Unreached> Unreached = [];
+
+        internal IEnumerable<string> Detections =>
+            Discarded.Concat(Unreached.Select(reference => reference.ThingId + " 写在 " + reference.Path));
+    }
+
+    internal static Reading Disarm()
+    {
+        Reading reading = new();
         if (deepSaved != null)
         {
             if (deepSaved.Count == 0)
             {
-                lines.Add(ProbeBroken + "一个深存对象都没记到（RegisterDeepSaved 的补丁）");
+                reading.Faults.Add(ProbeBroken + "一个深存对象都没记到（RegisterDeepSaved 的补丁）");
             }
 
             if (referencedCount == 0)
             {
-                lines.Add(ProbeBroken + "一条引用都没记到（RegisterReferenced 的补丁）");
+                reading.Faults.Add(ProbeBroken + "一条引用都没记到（RegisterReferenced 的补丁）");
             }
 
             if (maxDepth == 0)
             {
-                lines.Add(ProbeBroken + "路径栈从没进过一层（EnterNode 的补丁）");
+                reading.Faults.Add(ProbeBroken + "路径栈从没进过一层（EnterNode 的补丁）");
             }
 
             if (destroyedCheckCount == 0)
             {
-                lines.Add(ProbeBroken + "已销毁引用检查一次都没进"
-                          + "（CheckSaveReferenceToDestroyedThing 的补丁）");
+                reading.Faults.Add(ProbeBroken + "已销毁引用检查一次都没进"
+                                   + "（CheckSaveReferenceToDestroyedThing 的补丁）");
             }
         }
 
         if (discarded != null)
         {
-            lines.AddRange(discarded);
+            reading.Discarded.AddRange(discarded);
             if (discardedCount > discarded.Count)
             {
-                lines.Add("其余 " + (discardedCount - discarded.Count) + " 处已丢弃引用未记");
+                reading.Discarded.Add("其余 " + (discardedCount - discarded.Count) + " 处已丢弃引用未记");
             }
         }
 
         if (suspects != null)
         {
-            lines.AddRange(RunSentinel());
-            lines.AddRange(Report(suspects, deepSaved!));
+            reading.Faults.AddRange(RunSentinel());
+            reading.Unreached = Report(suspects, deepSaved!);
         }
 
         path = null;
         suspects = null;
         deepSaved = null;
         discarded = null;
-        return lines;
+        return reading;
     }
 
     internal static void DisarmAndLog()
     {
-        List<string> lines = Disarm();
-        if (lines.Count == 0)
+        Reading reading = Disarm();
+        foreach (string fault in reading.Faults)
         {
-            return;
+            RimRunnerSentinel.Raise(FaultReason, fault);
         }
 
-        foreach (string line in lines)
+        foreach (string detection in reading.Detections)
         {
-            RimRunnerSentinel.Raise(line.StartsWith(ProbeBroken, StringComparison.Ordinal)
-                ? "[engine] 存盘悬空引用探针未生效"
-                : "存盘检出悬空引用（读档侧会丢这条引用）", line);
+            RimRunnerSentinel.Raise("存盘检出悬空引用（读档侧会丢这条引用）", detection);
         }
     }
 
-    private static List<string> Report(
+    private static List<Unreached> Report(
         Dictionary<string, string> referenced, HashSet<string> saved)
     {
-        List<string> lines = [];
+        List<Unreached> found = [];
         foreach (KeyValuePair<string, string> pair in referenced)
         {
             if (saved.Contains(pair.Key))
@@ -113,10 +125,10 @@ internal static class RimRunnerDanglingRefProbe
                 continue;
             }
 
-            lines.Add(pair.Key + " 写在 " + pair.Value);
+            found.Add(new Unreached(pair.Key, pair.Value));
         }
 
-        return lines;
+        return found;
     }
 
     private static List<string> RunSentinel()

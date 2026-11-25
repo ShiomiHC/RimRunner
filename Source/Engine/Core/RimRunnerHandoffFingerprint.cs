@@ -153,12 +153,15 @@ internal static class RimRunnerHandoffFingerprint
         }
     }
 
+    internal const string MemberWindowSuffix = "本窗执行过同批成员的用例代码";
+    internal const string LoadWindowSuffix = "本窗只有 checkpoint 存读档与读档后补推的 1 tick，未执行同批成员的用例代码";
+
+    internal static string WindowLabel(string? caseId, int phase) => caseId + " phase " + phase + " 之后";
+
     internal static string Line(string stateKey, string window, bool byMember, Reading before, Reading after)
     {
         string key = stateKey[(stateKey.IndexOf(':') + 1)..];
         return "交棒现场变动：" + key + " 在 " + window + "：" + before + " → " + after
-               + (byMember
-                   ? "。本窗执行过同批成员的用例代码"
-                   : "。本窗只有 checkpoint 存读档与读档后补推的 1 tick，未执行同批成员的用例代码");
+               + (byMember ? "。" + MemberWindowSuffix : "。" + LoadWindowSuffix);
     }
 }

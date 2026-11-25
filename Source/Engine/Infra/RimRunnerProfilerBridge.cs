@@ -260,11 +260,13 @@ public static class RimRunnerProfilerBridge
 
     internal static int ResetGeneration = -1;
 
+    internal const string TickRateChangedReason = "上次 Reset（或 Arm）之后 tick 分档已改变，本段样本混入两档的结算频率";
+
     private static void RequireSingleTickRate()
     {
         if (ResetGeneration < 0 || ResetGeneration == RimRunnerTickRatePin.Generation) return;
         throw new InvalidOperationException(RimRunnerLog.Prefix + " RimRunnerProfilerBridge 读取样本："
-            + "上次 Reset（或 Arm）之后 tick 分档已改变，本段样本混入两档的结算频率");
+            + TickRateChangedReason);
     }
 
     /// <summary>导出逐周期原始序列文本；prefix null = 全部。</summary>

@@ -12,6 +12,8 @@ internal static class RimRunnerObservationKeys
     internal const string RestoreMissedReload = "restore-missed-reload";
     internal const string ScreenRepeat = "screen-repeat";
 
+    internal static string Head => MarkerHead;
+
     internal static string Marker(string key) => MarkerHead + key + "]";
 
     internal static string Line(string key, string text) => Marker(key) + " " + text;

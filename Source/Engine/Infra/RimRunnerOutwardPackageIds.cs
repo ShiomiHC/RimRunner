@@ -115,6 +115,13 @@ internal static class RimRunnerOutwardPackageIds
             ? RimRunnerPackagePresence.BareOf(packageId)
             : packageId;
 
+    internal static readonly string[] CopiedHeaderNodes = [MetaNode, GameVersionNode, ModIdsNode, SteamIdsNode, ModNamesNode];
+    private const string MetaNode = "meta";
+    private const string GameVersionNode = "gameVersion";
+    private const string ModIdsNode = "modIds";
+    private const string SteamIdsNode = "modSteamIds";
+    private const string ModNamesNode = "modNames";
+
     internal static List<ModContentPack> OutwardMods() =>
         LoadedModManager.RunningMods.Where(mod => mod != TestMod).ToList();
 
@@ -125,7 +132,7 @@ internal static class RimRunnerOutwardPackageIds
 
     private static bool WriteMetaHeaderPrefix()
     {
-        if (!Scribe.EnterNode("meta"))
+        if (!Scribe.EnterNode(MetaNode))
         {
             return false;
         }
@@ -133,14 +140,14 @@ internal static class RimRunnerOutwardPackageIds
         try
         {
             string? version = VersionControl.CurrentVersionStringWithRev;
-            Scribe_Values.Look(ref version, "gameVersion");
+            Scribe_Values.Look(ref version, GameVersionNode);
             List<ModContentPack> mods = OutwardMods();
             List<string?> ids = mods.Select(mod => BarePackageId(mod.PackageId)).ToList();
-            Scribe_Collections.Look(ref ids, "modIds", LookMode.Undefined);
+            Scribe_Collections.Look(ref ids, ModIdsNode, LookMode.Undefined);
             List<uint> steamIds = mods.Select(mod => mod.SteamAppId).ToList();
-            Scribe_Collections.Look(ref steamIds, "modSteamIds", LookMode.Undefined);
+            Scribe_Collections.Look(ref steamIds, SteamIdsNode, LookMode.Undefined);
             List<string> names = mods.Select(mod => mod.Name).ToList();
-            Scribe_Collections.Look(ref names, "modNames", LookMode.Undefined);
+            Scribe_Collections.Look(ref names, ModNamesNode, LookMode.Undefined);
         }
         finally
         {

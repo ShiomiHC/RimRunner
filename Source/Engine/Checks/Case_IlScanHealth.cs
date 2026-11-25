@@ -21,9 +21,8 @@ public class Case_IlScanHealth : RimRunnerRegression
 
         int probeAssemblies = RimRunnerIlScan.OurAssemblies().Count();
         ctx.AssertTrue("ILS1-ProbeAssembliesPresent", probeAssemblies >= 1,
-            "产品描述符未指定探针程序集，扫描面为空",
-            RimRunnerExpectationSource.Literal(
-                "扫描面由描述符的 ProbeAssemblies 给出，未指定时下面的量级闸也一起失去意义"));
+            "扫描面为空：探针程序集 0 个",
+            RimRunnerExpectationSource.Literal("扫描面取自描述符 ProbeTypes 所在的程序集"));
 
         ctx.AddDiagnostic(RimRunnerDiagnosticKind.Coverage, "ILS1-ScanHealth", "产品 " + full.Summary);
     }

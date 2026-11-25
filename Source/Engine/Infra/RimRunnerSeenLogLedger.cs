@@ -16,7 +16,9 @@ public static class RimRunnerSeenLogLedger
     private const string AckLineCategory = "ack";
     private const string AckStartCategory = "ack-start";
 
-    private const string PawnPlaceholder = "{pawn}";
+    internal const string PawnPlaceholder = "{pawn}";
+
+    internal const char DigitMarker = '#';
 
     private static readonly HashSet<string> generatedPawnNames = new(StringComparer.Ordinal);
 
@@ -57,15 +59,15 @@ public static class RimRunnerSeenLogLedger
         entry.degradedNotesFresh = Fresh(entry.id, DegradedNoteCategory, entry.degradedNotes);
     }
 
-    internal static List<string> AnnotateAcks(RimRunnerResultEntry entry)
+    internal static List<RimRunnerLogAcks.AckFreshClaim> AnnotateAcks(RimRunnerResultEntry entry)
     {
         return AnnotateAcks(EnsureLoaded(), entry, generatedPawnNames, !RimRunnerSaveProbe.Armed);
     }
 
-    internal static List<string> AnnotateAcks(RimRunnerRingLedger book, RimRunnerResultEntry entry,
+    internal static List<RimRunnerLogAcks.AckFreshClaim> AnnotateAcks(RimRunnerRingLedger book, RimRunnerResultEntry entry,
         IEnumerable<string> pawnNames, bool remember)
     {
-        List<string> claims = [];
+        List<RimRunnerLogAcks.AckFreshClaim> claims = [];
         foreach (RimRunnerLogAckEntry cell in entry.logAcks)
         {
             string identity = RimRunnerLogAcks.IdentityOf(cell);
@@ -102,7 +104,7 @@ public static class RimRunnerSeenLogLedger
 
             if (started)
             {
-                claims.Add(RimRunnerLogAcks.FreshClaim(entry.id, cell));
+                claims.Add(RimRunnerLogAcks.FreshClaim(cell));
             }
             else if (remember)
             {
@@ -264,7 +266,7 @@ public static class RimRunnerSeenLogLedger
             bool digit = c is >= '0' and <= '9';
             if (digit && !inDigits)
             {
-                shape.Append('#');
+                shape.Append(DigitMarker);
             }
             else if (!digit)
             {

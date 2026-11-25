@@ -4,7 +4,7 @@ internal static class RimRunnerSentinel
 {
     private const string SubjectSeparator = " —— ";
 
-    private static List<string>? capture;
+    private static List<Hit>? capture;
 
     internal sealed class Hit(string reason, string? subject, string? key)
     {
@@ -29,7 +29,7 @@ internal static class RimRunnerSentinel
 
         if (capture != null)
         {
-            capture.Add(message);
+            capture.Add(new Hit(reason, subject, null));
             return;
         }
 
@@ -60,7 +60,7 @@ internal static class RimRunnerSentinel
 
         if (capture != null)
         {
-            capture.Add(message);
+            capture.Add(new Hit(reason, subject, key));
             return;
         }
 
@@ -144,9 +144,11 @@ internal static class RimRunnerSentinel
 
     internal sealed class CaptureScope : IDisposable
     {
-        internal IReadOnlyList<string> Messages => (snapshot ?? capture)!;
+        internal IReadOnlyList<Hit> Hits => (snapshot ?? capture)!;
 
-        private List<string>? snapshot;
+        internal IReadOnlyList<string> Messages => Hits.Select(hit => Compose(hit.Reason, hit.Subject)).ToList();
+
+        private List<Hit>? snapshot;
 
         public void Dispose()
         {

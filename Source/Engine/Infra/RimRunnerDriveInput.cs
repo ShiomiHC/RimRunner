@@ -84,8 +84,27 @@ internal static class RimRunnerDriveInput
             return "不在窗口上，也没有当前地图";
         }
 
+        IntVec3? cell = LandingCell(screen);
+        return cell is { } landed
+            ? "不在窗口上，其下的地图格 (" + landed.x + "," + landed.z + ")"
+            : "不在窗口上，其下超出地图范围";
+    }
+
+    internal static IntVec3? LandingCell(Vector2 screen)
+    {
+        if (Find.WindowStack.GetWindowAt(RimRunnerLivePointer.ToUi(screen)) != null || WorldRendererUtility.WorldSelected)
+        {
+            return null;
+        }
+
+        Map? map = RimRunnerCurrentMapProbe.EngineCurrentMap();
+        if (map == null)
+        {
+            return null;
+        }
+
         IntVec3 cell = UI.UIToMapPosition(screen / Prefs.UIScale).ToIntVec3();
-        return cell.InBounds(map) ? "不在窗口上，其下的地图格 (" + cell.x + "," + cell.z + ")" : "不在窗口上，其下超出地图范围";
+        return cell.InBounds(map) ? cell : null;
     }
 
     private static string MouseCell()

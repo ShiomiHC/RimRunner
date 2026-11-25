@@ -249,7 +249,20 @@ public partial class RimRunnerContext
         internal required HashSet<Thing> Buildings;
     }
 
-    private const string MainMapLabel = "主图";
+    internal const string MainMapLabel = "主图";
+
+    internal const string PawnResidueTitle = "本用例新增的 pawn";
+    internal const string WokenResidueTitle = "基线时休眠";
+    internal const string ItemResidueTitle = "自建物品";
+    internal const string BuildingResidueTitle = "座建筑";
+    internal const string FireResidueTitle = "处火";
+    internal const string ContinuationPrefix = "续段起点图上 ";
+    internal const string ContinuationLeakTitle = "非本用例 spawned pawn";
+    internal const string ContinuationWokenTitle = "装配时休眠";
+    internal const string QueueResidueTitle = "叙事者队列";
+    internal const string QueueDrainedNote = "叙事者停用，这些事件未发，已清空";
+    internal const string TargetStandUpTitle = "站起";
+    internal const string MobilityHintPrefix = "规格 mobility=";
     private readonly List<MapResidueBaseline> residueBaselines = [];
     private HashSet<Map>? baselineMaps;
     private HashSet<Thing>? baselineIndestructible;
@@ -305,6 +318,8 @@ public partial class RimRunnerContext
     }
 
     internal IReadOnlyList<string> PendingLiveFingerprints => [.. pendingLiveFingerprints.Select(finding => finding.Line)];
+
+    internal IReadOnlyList<RimRunnerFindingEntry> PendingLiveFingerprintEntries => pendingLiveFingerprints;
 
     internal static bool ShouldPublishFingerprints(string? status)
     {
@@ -414,14 +429,14 @@ public partial class RimRunnerContext
         Dictionary<Pawn, Thing> spawners = PawnSpawnersOf(Map, leaks.Concat(woken).ToList());
         if (leaks.Count > 0)
         {
-            AddResidueDiagnostic("续段起点图上 " + leaks.Count + " 个非本用例 spawned pawn（"
+            AddResidueDiagnostic(ContinuationPrefix + leaks.Count + " 个" + ContinuationLeakTitle + "（"
                                  + Describe(leaks.Select(pawn => DescribeOrigin(pawn, spawners))) + "）",
                 "漏清的 pawn 计入续段基线");
         }
 
         if (woken.Count > 0)
         {
-            AddResidueDiagnostic("续段起点图上 " + woken.Count + " 个装配时休眠、此刻已醒的 pawn（"
+            AddResidueDiagnostic(ContinuationPrefix + woken.Count + " 个" + ContinuationWokenTitle + "、此刻已醒的 pawn（"
                                  + Describe(woken.Select(pawn => DescribeOrigin(pawn, spawners))) + "）",
                 DormantNote + "，已醒的 pawn 计入续段基线");
         }
@@ -609,10 +624,10 @@ public partial class RimRunnerContext
         WriteLiveFingerprints(PushFingerprint);
     }
 
-    internal IReadOnlyList<string> PeekLiveFingerprints()
+    internal IReadOnlyList<RimRunnerFindingEntry> PeekLiveFingerprints()
     {
-        List<string> list = [];
-        WriteLiveFingerprints(finding => list.Add(finding.Line));
+        List<RimRunnerFindingEntry> list = [];
+        WriteLiveFingerprints(list.Add);
         return list;
     }
 
@@ -718,7 +733,7 @@ public partial class RimRunnerContext
             return null;
         }
 
-        string head = "靶在用例期间" + (died ? "死亡" : "站起");
+        string head = "靶在用例期间" + (died ? "死亡" : TargetStandUpTitle);
         if (RimRunnerPawns.TryGetSpecTarget(pawn, out RimRunnerPawns.SpecTarget? specTarget)
             && specTarget.Spec is RimRunnerTargetSpecBase spec)
         {
@@ -803,7 +818,7 @@ public partial class RimRunnerContext
     {
         if (!died)
         {
-            return "规格 mobility=" + spec.Mobility;
+            return MobilityHintPrefix + spec.Mobility;
         }
 
         if (spec is RimRunnerDummySpec dummy)
@@ -950,13 +965,13 @@ public partial class RimRunnerContext
             Dictionary<Pawn, Thing> spawners = PawnSpawnersOf(baseline.Map, mapResidue.Concat(wokenResidue).ToList());
             if (mapResidue.Count > 0)
             {
-                AddResidueDiagnostic(baseline.Label + " " + mapResidue.Count + " 个本用例新增的 pawn（"
+                AddResidueDiagnostic(baseline.Label + " " + mapResidue.Count + " 个" + PawnResidueTitle + "（"
                                      + Describe(mapResidue.Select(pawn => DescribeOrigin(pawn, spawners))) + "）");
             }
 
             if (wokenResidue.Count > 0)
             {
-                AddResidueDiagnostic(baseline.Label + " " + wokenResidue.Count + " 个基线时休眠、本用例期间醒来的 pawn（"
+                AddResidueDiagnostic(baseline.Label + " " + wokenResidue.Count + " 个" + WokenResidueTitle + "、本用例期间醒来的 pawn（"
                                      + Describe(wokenResidue.Select(pawn => DescribeOrigin(pawn, spawners))) + "）",
                     DormantNote);
             }
@@ -971,7 +986,7 @@ public partial class RimRunnerContext
         if (itemResidue.Count > 0)
         {
             string where = baseline.Label == MainMapLabel ? "" : baseline.Label + " ";
-            AddResidueDiagnostic(where + itemResidue.Count + " 件自建物品（"
+            AddResidueDiagnostic(where + itemResidue.Count + " 件" + ItemResidueTitle + "（"
                                  + Describe(itemResidue.Select(DescribeItem)) + "）"
                                  + DescribeCandidateProducers(baseline.Map, itemResidue)
                                  + HandwrittenThingIdHint(itemResidue));
@@ -982,7 +997,7 @@ public partial class RimRunnerContext
             .ToList();
         if (buildingResidue.Count > 0)
         {
-            AddResidueDiagnostic(baseline.Label + " " + buildingResidue.Count + " 座建筑（"
+            AddResidueDiagnostic(baseline.Label + " " + buildingResidue.Count + " " + BuildingResidueTitle + "（"
                                  + Describe(buildingResidue.Select(DescribeBuilding)) + "）"
                                  + HandwrittenThingIdHint(buildingResidue));
         }
@@ -990,7 +1005,7 @@ public partial class RimRunnerContext
         List<Fire> fires = FiresOf(baseline.Map);
         if (fires.Count > 0)
         {
-            AddResidueDiagnostic(baseline.Label + " " + fires.Count + " 处火（"
+            AddResidueDiagnostic(baseline.Label + " " + fires.Count + " " + FireResidueTitle + "（"
                                  + Describe(fires.Select(fire => fire.parent != null
                                      ? "附着于 " + fire.parent.LabelShort
                                      : "地面 " + fire.Position)) + "），已扑灭");
@@ -1041,11 +1056,12 @@ public partial class RimRunnerContext
 
     private void AppendQueuedIncidentResidue(string owner)
     {
-        List<string> queuedIncidents = RimRunnerStorytellerQuiesce.DrainQueued(owner);
+        List<RimRunnerStorytellerQuiesce.ClearedIncident> queuedIncidents = RimRunnerStorytellerQuiesce.DrainQueued(owner);
         if (queuedIncidents.Count > 0)
         {
-            AddResidueDiagnostic("叙事者队列 " + queuedIncidents.Count + " 条待发事件（" + Describe(queuedIncidents) + "）",
-                "叙事者停用，这些事件未发，已清空");
+            AddResidueDiagnostic(QueueResidueTitle + " " + queuedIncidents.Count + " 条待发事件（"
+                + Describe(queuedIncidents.Select(incident => incident.Text(owner))) + "）",
+                QueueDrainedNote);
         }
     }
 
@@ -1087,7 +1103,7 @@ public partial class RimRunnerContext
         return false;
     }
 
-    private const string ResidueText = "本用例结束后仍残留";
+    internal const string ResidueText = "本用例结束后仍残留";
 
     private void AddResidueDiagnostic(string what, string note = "")
     {
@@ -1122,13 +1138,14 @@ public partial class RimRunnerContext
         }, close: true);
     }
 
-    internal IReadOnlyList<string> PeekWindowFingerprints(bool close = false)
+    internal IReadOnlyList<string> PeekResidueSubjects(bool close = false)
     {
         List<string> list = [];
-        RimRunnerWindowWatch.WriteCaseLines((window, text) => list.Add(window + "：" + text),
-            (what, tail) => list.Add(ResidueText + "：" + what + tail), close);
+        RimRunnerWindowWatch.WriteCaseLines((_, _) => { }, (what, _) => list.Add(what), close);
         return list;
     }
+
+    internal IReadOnlyList<RimRunnerWindowWatch.CasePush> PeekCasePushes() => RimRunnerWindowWatch.PeekCasePushes();
 
     private string DescribeOrigin(Pawn pawn, Dictionary<Pawn, Thing> spawners)
     {
@@ -1252,7 +1269,7 @@ public partial class RimRunnerContext
         return OnMapPawnsOf(map).Where(pawn => !registered.Contains(pawn)).ToList();
     }
 
-    private const string DormantNote = "非本用例生成";
+    internal const string DormantNote = "非本用例生成";
 
     private static IEnumerable<Thing> BuildingsOf(Map? map)
     {

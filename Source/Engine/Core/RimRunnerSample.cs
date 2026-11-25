@@ -88,7 +88,7 @@ public sealed class RimRunnerSampleWindow
 
     internal bool FromMeterSource { get; }
 
-    internal string PinLabel { get; private set; } = "none";
+    internal string PinLabel { get; private set; } = RimRunnerReadoutContext.NoPinLabel;
 
     /// <summary>段长（tick）：关窗时定格。</summary>
     /// <exception cref="InvalidOperationException">窗未关时读即抛。</exception>
@@ -175,5 +175,5 @@ public sealed class RimRunnerSampleWindow
         }
     }
 
-    private static string PinName(int rate) => rate == 0 ? "none" : rate.ToString();
+    private static string PinName(int rate) => rate == 0 ? RimRunnerReadoutContext.NoPinLabel : rate.ToString();
 }

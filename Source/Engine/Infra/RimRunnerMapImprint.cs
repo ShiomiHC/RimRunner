@@ -19,6 +19,8 @@ internal sealed class RimRunnerMapImprint
     internal readonly HashSet<string> Designations = [];
     internal readonly List<IntVec3> CollapseMarked = [];
 
+    internal const string AreaPrefix = "区域 ";
+
     internal static RimRunnerMapImprint Take(Map map)
     {
         int cells = map.cellIndices.NumGridCells;
@@ -270,11 +272,11 @@ internal sealed class RimRunnerMapImprint
             bool hasAfter = later.Areas.TryGetValue(id, out var after);
             if (!hadBefore || !hasAfter)
             {
-                drift.Add("区域 " + (hadBefore ? before.label : after.label) + "#" + id + (hadBefore ? " 已删除" : " 新建"));
+                drift.Add(AreaPrefix + (hadBefore ? before.label : after.label) + "#" + id + (hadBefore ? " 已删除" : " 新建"));
                 continue;
             }
 
-            AddCells(drift, "区域 " + before.label + "#" + id, include, index => before.cells[index] != after.cells[index],
+            AddCells(drift, AreaPrefix + before.label + "#" + id, include, index => before.cells[index] != after.cells[index],
                 index => before.cells[index] ? "去" : "增");
         }
 

@@ -36,13 +36,23 @@ internal sealed class RimRunnerComponentState
         public readonly string Xml = xml;
     }
 
+    internal enum Layer
+    {
+        Map,
+        World,
+        Game,
+    }
+
     internal sealed class Drift
     {
         internal required string Where;
         internal required string TypeName;
         internal bool Product;
         internal bool OnMap;
+        internal Layer Layer;
+        internal required string Key;
         internal required string Detail;
+        internal bool BothBaselines;
         internal string[]? FilledElements;
 
         public override string ToString() => Where + " 的存档状态与开始执行前不匹配（" + Detail + "）";
@@ -287,6 +297,7 @@ internal sealed class RimRunnerComponentState
             }
 
             string detail;
+            bool bothBaselines = false;
             bool hasOrigin = origin.TryGetValue(entry.Key, out Entry first);
             if (hasOrigin && first.Xml != rebased.Xml)
             {
@@ -296,6 +307,7 @@ internal sealed class RimRunnerComponentState
                 }
 
                 detail = "对开始执行前 " + FirstDiff(first.Xml, entry.Value.Xml) + "；对读档后 " + FirstDiff(rebased.Xml, entry.Value.Xml);
+                bothBaselines = true;
             }
             else
             {
@@ -313,7 +325,10 @@ internal sealed class RimRunnerComponentState
                 TypeName = entry.Value.Type.FullName ?? entry.Value.Type.Name,
                 Product = IsProduct(entry.Value.Type),
                 OnMap = onMap,
+                Layer = LayerOf(entry.Key),
+                Key = entry.Key,
                 Detail = detail,
+                BothBaselines = bothBaselines,
                 FilledElements = FilledElements(rebased.Xml, entry.Value.Xml),
             });
         }
@@ -569,6 +584,11 @@ internal sealed class RimRunnerComponentState
 
         return result;
     }
+
+    private static Layer LayerOf(string key) =>
+        key.StartsWith("map:", StringComparison.Ordinal) ? Layer.Map
+        : key.StartsWith("world:", StringComparison.Ordinal) ? Layer.World
+        : Layer.Game;
 
     private static string Label(string key)
     {

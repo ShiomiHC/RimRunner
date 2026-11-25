@@ -78,6 +78,13 @@ public static class RimRunnerBuildingCells
     internal static string Blockers(Map map, ThingDef def, IEnumerable<IntVec3> candidates, bool requireClearItems,
         Pawn? reachFrom)
     {
+        string described = BlockerStats(map, def, candidates, requireClearItems, reachFrom).Describe();
+        return described.Length == 0 ? "" : "。" + described;
+    }
+
+    internal static RimRunnerCellBlockers BlockerStats(Map map, ThingDef def, IEnumerable<IntVec3> candidates,
+        bool requireClearItems, Pawn? reachFrom)
+    {
         RimRunnerCellBlockers blockers = new(map);
         int unreachable = 0;
         foreach (IntVec3 cell in candidates)
@@ -100,8 +107,7 @@ public static class RimRunnerBuildingCells
         }
 
         blockers.AddPlacements("落点格都合格但 worker 无法到达", unreachable);
-        string described = blockers.Describe();
-        return described.Length == 0 ? "" : "。" + described;
+        return blockers;
     }
 
     private static IEnumerable<IntVec3> FootprintOf(IntVec3 cell, ThingDef def)

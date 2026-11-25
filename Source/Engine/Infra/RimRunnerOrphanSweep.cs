@@ -7,6 +7,8 @@ namespace RimRunner;
 /// <remarks>收集面：与 PawnsFinder.All_AliveOrDead 里任一 pawn 有直接关系（任一方向）的孤儿，加上虚拟关系记录引用着的。</remarks>
 public static class RimRunnerOrphanSweep
 {
+    internal const string ReverseIndexCarrier = "反向索引";
+
     internal static bool IsOrphan(Pawn p) =>
         !p.Destroyed && !p.Spawned && p.ParentHolder == null && !p.IsWorldPawn();
 
@@ -116,7 +118,7 @@ public static class RimRunnerOrphanSweep
 
             if (ReverseIndex(holder.relations!).Contains(orphan))
             {
-                parts.Add("持有者 " + DescribePawn(holder) + " 的反向索引");
+                parts.Add("持有者 " + DescribePawn(holder) + " 的" + ReverseIndexCarrier);
             }
         }
 

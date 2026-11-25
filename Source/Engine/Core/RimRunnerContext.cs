@@ -192,6 +192,8 @@ public partial class RimRunnerContext
     private Map? currentMapAtStart;
     private bool mentalSwitchAtStart;
 
+    internal const string MentalSwitchLeakReason = "收尾后 DebugSettings.enableRandomMentalStates 未还原";
+
     /// <summary>作用域内把 map 设为当前地图，期间推 tick 即抛；不可嵌套。</summary>
     /// <remarks>切换与玩家切图同形（图已是当前地图时不切）：出作用域切回原地图并清掉作用域里的选中；到用例收尾未收即切回并记清理错误。</remarks>
     public IDisposable AsCurrentMap(Map map) => RimRunnerCurrentMap.Lend(map);
@@ -299,7 +301,7 @@ public partial class RimRunnerContext
                     bool leaked = DebugSettings.enableRandomMentalStates;
                     DebugSettings.enableRandomMentalStates = mentalSwitchAtStart;
                     RimRunnerSession.AddRuntimeWarning(current, RimRunnerWarningKey.MentalSwitchWrite,
-                        "收尾后 DebugSettings.enableRandomMentalStates 未还原（" + mentalSwitchAtStart + " → " + leaked
+                        MentalSwitchLeakReason + "（" + mentalSwitchAtStart + " → " + leaked
                         + "），引擎已复位");
                 }
 
@@ -412,10 +414,10 @@ public partial class RimRunnerContext
     {
         try
         {
-            foreach (string line in restore.Close(IsHeldForCheckpoint))
+            foreach (RimRunnerMapRestore.Unrestorable unres in restore.Close(IsHeldForCheckpoint))
             {
                 MainMapUnrestorable = true;
-                AddResidueDiagnostic(batch + "主图无法还原：" + line,
+                AddResidueDiagnostic(batch + "主图无法还原：" + unres.Text,
                     "已排定回到主队列时回载基线档");
             }
 

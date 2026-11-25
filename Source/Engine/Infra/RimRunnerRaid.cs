@@ -342,7 +342,7 @@ public static class RimRunnerRaid
             throw new ArgumentNullException(nameof(lordJob), "按格落点须给编队");
         }
 
-        string? rejection = CellsRejection(squad, map, cells);
+        string? rejection = CellsRejection(squad, map, cells)?.Text;
         if (rejection != null)
         {
             throw new InvalidOperationException(RimRunnerLog.Prefix + " [" + squad.Label + "] 按格落点：" + rejection);
@@ -360,16 +360,16 @@ public static class RimRunnerRaid
         });
     }
 
-    internal static string? CellsRejection(RimRunnerRaidSquad squad, Map map, IReadOnlyList<IntVec3>? cells)
+    internal static Rejection? CellsRejection(RimRunnerRaidSquad squad, Map map, IReadOnlyList<IntVec3>? cells)
     {
         if (cells == null)
         {
-            return "cells 为 null";
+            return new Rejection { Kind = RejectionKind.Null };
         }
 
         if (cells.Count != squad.Members.Count)
         {
-            return "格数 " + cells.Count + " ≠ 成员数 " + squad.Members.Count;
+            return new Rejection { Kind = RejectionKind.CountMismatch, Count = cells.Count, Expected = squad.Members.Count };
         }
 
         HashSet<IntVec3> seen = [];
@@ -378,26 +378,56 @@ public static class RimRunnerRaid
             IntVec3 c = cells[i];
             if (!c.InBounds(map))
             {
-                return "第 " + i + " 格 " + c + " 出界";
+                return new Rejection { Kind = RejectionKind.OutOfBounds, Index = i, Cell = c };
             }
 
             if (!c.Standable(map))
             {
-                return "第 " + i + " 格 " + c + " 不可站";
+                return new Rejection { Kind = RejectionKind.Unstandable, Index = i, Cell = c };
             }
 
-            if (c.GetFirstPawn(map) != null)
+            if (c.GetFirstPawn(map) is { } occupant)
             {
-                return "第 " + i + " 格 " + c + " 已有 pawn " + c.GetFirstPawn(map).LabelShort;
+                return new Rejection { Kind = RejectionKind.Occupied, Index = i, Cell = c, Detail = occupant.LabelShort };
             }
 
             if (!seen.Add(c))
             {
-                return "第 " + i + " 格 " + c + " 与前面的格重复";
+                return new Rejection { Kind = RejectionKind.Duplicate, Index = i, Cell = c };
             }
         }
 
         return null;
+    }
+
+    internal sealed class Rejection
+    {
+        internal required RejectionKind Kind;
+        internal int Index = -1;
+        internal IntVec3 Cell;
+        internal int Count;
+        internal int Expected;
+        internal string? Detail;
+
+        internal string Text => Kind switch
+        {
+            RejectionKind.Null => "cells 为 null",
+            RejectionKind.CountMismatch => "格数 " + Count + " ≠ 成员数 " + Expected,
+            RejectionKind.OutOfBounds => "第 " + Index + " 格 " + Cell + " 出界",
+            RejectionKind.Unstandable => "第 " + Index + " 格 " + Cell + " 不可站",
+            RejectionKind.Occupied => "第 " + Index + " 格 " + Cell + " 已有 pawn " + Detail,
+            RejectionKind.Duplicate => "第 " + Index + " 格 " + Cell + " 与前面的格重复",
+        };
+    }
+
+    internal enum RejectionKind
+    {
+        Null,
+        CountMismatch,
+        OutOfBounds,
+        Unstandable,
+        Occupied,
+        Duplicate,
     }
 
     private static void RequireDeployInputs(RimRunnerContext ctx, RimRunnerRaidSquad squad, Map map)

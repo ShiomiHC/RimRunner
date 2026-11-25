@@ -142,14 +142,14 @@ public sealed class ArtifactGate(OrchestratorDescriptor descriptor, string produ
                 foreach (Stale entry in listChanged)
                 {
                     string detail = InputChangeLogDetail(entry);
-                    ObservationSignatures.Mark(RimRunner.RimRunnerObservationKeys.StaleAfterCompile,
+                    ObservationMarks.Mark(RimRunner.RimRunnerObservationKeys.StaleAfterCompile,
                         $"编译后输入清单仍与快照不匹配：{entry.Project}（{detail}）");
                     CliLog.Info($"[产物闸] 编译后产物未重写，按 MSBuild 为准更新输入清单：{entry.Project}（{detail}）");
                 }
 
                 if (otherStale.Count > 0)
                 {
-                    ObservationSignatures.Mark(RimRunner.RimRunnerObservationKeys.StaleAfterCompile,
+                    ObservationMarks.Mark(RimRunner.RimRunnerObservationKeys.StaleAfterCompile,
                         $"编译后仍陈旧：{string.Join("、", otherStale.Select(entry => entry.Project + " 早于 " + entry.Newest))}");
                     string line = $"[WARN] 编译后仍有 {otherStale.Count} 个工程的产物早于下列文件{(otherStale.All(entry => beforeCompile.Contains((entry.Dll, entry.DllUtc))) ? "，MSBuild 未重写" : "")}";
                     onLogLine?.Invoke(line);

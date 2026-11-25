@@ -207,6 +207,9 @@ internal static class RimRunnerCheckpointPlanner
         return parsed;
     }
 
+    internal const string TicksMismatchReason = "段数与 PhaseCount 不匹配";
+    internal const string TicksNegativeReason = "含负数";
+
     internal static List<string> DeclarationFaults(string id, IRimRunnerPhasedCase? phased,
         bool sitedOnIsolatedMap = false)
     {
@@ -242,11 +245,15 @@ internal static class RimRunnerCheckpointPlanner
             faults.Add("用例 " + id + " 的 CheckpointResources 为 null");
         }
 
-        if (declared != null
-            && (declared.Length != phased.PhaseCount || declared.Any(ticks => ticks < 0)))
+        if (declared != null && declared.Length != phased.PhaseCount)
         {
-            faults.Add("用例 " + id + " 的 CheckpointTicks = [" + string.Join(", ", declared)
-                       + "] 与 PhaseCount=" + phased.PhaseCount + " 不匹配或含负数");
+            faults.Add("用例 " + id + " 的 CheckpointTicks = [" + string.Join(", ", declared) + "] "
+                       + TicksMismatchReason + "：PhaseCount=" + phased.PhaseCount);
+        }
+
+        if (declared != null && declared.Any(ticks => ticks < 0))
+        {
+            faults.Add("用例 " + id + " 的 CheckpointTicks = [" + string.Join(", ", declared) + "] " + TicksNegativeReason);
         }
 
         return faults;
@@ -344,19 +351,37 @@ internal static class RimRunnerCheckpointPlanner
                + "，已独占一批重新执行。同批成员（phase 0 序）：" + string.Join("、", batchMembers);
     }
 
-    internal static string BatchRedRetried(string id, string firstRed, int clockDrift, IEnumerable<string> batchMembers)
+    internal enum CheckpointRedKind
     {
-        return id + "：屏障批中未通过（" + firstRed + "）。本图位未声明预算，已独占一批从 phase 0 重新执行。两 phase 之间时钟差 "
-               + clockDrift + " tick；同批成员（phase 0 序）：" + string.Join("、", batchMembers);
+        Retried,
+        SoloGreen,
     }
 
-    internal static string BatchRedSoloGreen(string id, string firstRed, int batchDrift, int soloDrift, bool onIsolatedMap,
-        IEnumerable<string> batchMembers)
+    internal sealed record CheckpointRed(
+        CheckpointRedKind Kind,
+        string Id,
+        string FirstRed,
+        int BatchDrift,
+        int SoloDrift,
+        IReadOnlyList<string> Members);
+
+    internal static CheckpointRed BatchRedRetried(string id, string firstRed, int clockDrift, IEnumerable<string> batchMembers) =>
+        new(CheckpointRedKind.Retried, id, firstRed, clockDrift, 0, batchMembers.ToList());
+
+    internal static CheckpointRed BatchRedSoloGreen(string id, string firstRed, int batchDrift, int soloDrift, bool onIsolatedMap,
+        IEnumerable<string> batchMembers) =>
+        new(CheckpointRedKind.SoloGreen, id, firstRed, batchDrift, soloDrift, batchMembers.ToList());
+
+    internal static string Describe(CheckpointRed red) => red.Kind switch
     {
-        return id + " 在屏障批中未通过，独占一批重新执行后通过，两程结论不匹配，本条结论不可用。两 phase 之间时钟差：批内 " + batchDrift
-               + " tick、独占 " + soloDrift + " tick。批内那程的首条失败：" + firstRed
-               + "。同批成员（phase 0 序）：" + string.Join("、", batchMembers);
-    }
+        CheckpointRedKind.Retried =>
+            red.Id + "：屏障批中未通过（" + red.FirstRed + "）。本图位未声明预算，已独占一批从 phase 0 重新执行。两 phase 之间时钟差 "
+            + red.BatchDrift + " tick；同批成员（phase 0 序）：" + string.Join("、", red.Members),
+        _ =>
+            red.Id + " 在屏障批中未通过，独占一批重新执行后通过，两程结论不匹配，本条结论不可用。两 phase 之间时钟差：批内 " + red.BatchDrift
+            + " tick、独占 " + red.SoloDrift + " tick。批内那程的首条失败：" + red.FirstRed
+            + "。同批成员（phase 0 序）：" + string.Join("、", red.Members),
+    };
 
     private static string? Excess(string id, int mapDrift, int budget, int clockDrift, int clockBudget)
     {

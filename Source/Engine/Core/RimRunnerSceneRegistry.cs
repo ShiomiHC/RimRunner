@@ -2,6 +2,49 @@ using System.IO;
 
 namespace RimRunner;
 
+internal enum RimRunnerSceneFaultKind
+{
+    EmptySceneId,
+    DuplicateSceneId,
+    ReservedSceneId,
+    NoRole,
+    BadIsolatedSize,
+    DuplicateStepName,
+    BadInspectTab,
+    BadDefaultWithinTicks,
+    BadPredecessor,
+    NoActionOrUntil,
+    NegativeDwellTicks,
+    NegativeWithinTicks,
+    StrayWithinTicks,
+    NegativeFilmSpeed,
+    NullShot,
+    BadShotName,
+    DuplicateShotName,
+    SetupNotStep,
+    ThroughNotStep,
+    SetupOffPath,
+    NoOutput,
+    PartialOutputSize,
+    NonPositiveOutputSize,
+    OutputBelowFloor,
+    BadClipFormats,
+    OddMp4Size,
+    BadMaxBytes,
+    EmptyCameraKey,
+    BadCameraSize,
+    BadFpsOrSpeed,
+    NegativeLeadTail,
+    TooFewFrames,
+    NonPositivePanSeconds,
+    BadMusic,
+    ShotFpsNotWhole,
+    StepFpsNotWhole,
+    StepZeroSpeed,
+}
+
+internal sealed record RimRunnerSceneFault(RimRunnerSceneFaultKind Kind, string Owner, string Text);
+
 internal static class RimRunnerSceneRegistry
 {
     internal static readonly string[] ReservedIds = ["step", "teardown", "stop", "list"];
@@ -37,7 +80,7 @@ internal static class RimRunnerSceneRegistry
         All = Discover(candidates.Where(type => packages.Admits(type.FullName!)), faults);
         Showcases = WithRole<IRimRunnerShowcase>(All);
         Films = WithRole<IRimRunnerFilm>(All);
-        faults.AddRange(GateFaults(All));
+        faults.AddRange(GateFaults(All).Select(fault => fault.Text));
         warnings.AddRange(SiteWarnings(All));
         Faults = faults;
         Warnings = warnings;
@@ -113,9 +156,9 @@ internal static class RimRunnerSceneRegistry
             .ToList();
     }
 
-    internal static List<string> GateFaults(IEnumerable<RimRunnerScene> showcases)
+    internal static List<RimRunnerSceneFault> GateFaults(IEnumerable<RimRunnerScene> showcases)
     {
-        var faults = new List<string>();
+        var faults = new List<RimRunnerSceneFault>();
         List<RimRunnerScene> list = showcases.ToList();
         foreach (IGrouping<string, RimRunnerScene> group in list
                      .GroupBy(showcase => showcase.Id ?? string.Empty, StringComparer.Ordinal))
@@ -123,18 +166,21 @@ internal static class RimRunnerSceneRegistry
             string owners = string.Join("、", group.Select(showcase => showcase.GetType().Name));
             if (string.IsNullOrWhiteSpace(group.Key))
             {
-                faults.Add("场面 Id 为空：" + owners);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.EmptySceneId, group.Key,
+                    "场面 Id 为空：" + owners));
                 continue;
             }
 
             if (group.Count() > 1)
             {
-                faults.Add("场面 Id 重复：" + group.Key + "（" + owners + "）");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.DuplicateSceneId, group.Key,
+                    "场面 Id 重复：" + group.Key + "（" + owners + "）"));
             }
 
             if (ReservedIds.Contains(group.Key))
             {
-                faults.Add("场面 Id 与 showcase 子动作同名：" + group.Key + "（" + owners + "）");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.ReservedSceneId, group.Key,
+                    "场面 Id 与 showcase 子动作同名：" + group.Key + "（" + owners + "）"));
             }
         }
 
@@ -143,30 +189,35 @@ internal static class RimRunnerSceneRegistry
             string id = showcase.Id ?? showcase.GetType().Name;
             if (showcase is not IRimRunnerShowcase && showcase is not IRimRunnerFilm)
             {
-                faults.Add("场面 " + id + " 没有实现 IRimRunnerShowcase 或 IRimRunnerFilm，没有入口能立场");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NoRole, id,
+                    "场面 " + id + " 没有实现 IRimRunnerShowcase 或 IRimRunnerFilm，没有入口能立场"));
             }
 
             if (showcase.MapSite.Kind == RimRunnerMapSite.Choice.Isolated
                 && RimRunnerIsolatedMap.SizeFault(showcase.MapSite.Size) is { } sizeFault)
             {
-                faults.Add("场面 " + id + " 声明 MapSite = Isolated：" + sizeFault);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadIsolatedSize, id,
+                    "场面 " + id + " 声明 MapSite = Isolated：" + sizeFault));
             }
 
             foreach (IGrouping<string, RimRunnerSceneStep> step in showcase.Steps
                          .GroupBy(step => step.Name, StringComparer.Ordinal)
                          .Where(group => group.Count() > 1))
             {
-                faults.Add("场面 " + id + " 步骤名重复：" + step.Key);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.DuplicateStepName, id,
+                    "场面 " + id + " 步骤名重复：" + step.Key));
             }
 
             if (showcase.InspectTab != null && !typeof(InspectTabBase).IsAssignableFrom(showcase.InspectTab))
             {
-                faults.Add("场面 " + id + " 的 InspectTab 不是检视标签页类型：" + showcase.InspectTab.FullName);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadInspectTab, id,
+                    "场面 " + id + " 的 InspectTab 不是检视标签页类型：" + showcase.InspectTab.FullName));
             }
 
             if (showcase.DefaultWithinTicks <= 0)
             {
-                faults.Add("场面 " + id + " 的 DefaultWithinTicks 须为正：" + showcase.DefaultWithinTicks);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadDefaultWithinTicks, id,
+                    "场面 " + id + " 的 DefaultWithinTicks 须为正：" + showcase.DefaultWithinTicks));
             }
 
             var declared = new HashSet<string>(StringComparer.Ordinal);
@@ -174,32 +225,38 @@ internal static class RimRunnerSceneRegistry
             {
                 if (step.After != null && step.After != RimRunnerSceneStep.StageRoot && !declared.Contains(step.After))
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」的前驱「" + step.After + "」不是排在它之前的步骤");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadPredecessor, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」的前驱「" + step.After + "」不是排在它之前的步骤"));
                 }
 
                 if (step.Action == null && step.Until == null)
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」既没有动作也没有完成条件");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NoActionOrUntil, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」既没有动作也没有完成条件"));
                 }
 
                 if (step.DwellTicks < 0)
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」的 dwellTicks 不得为负：" + step.DwellTicks);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NegativeDwellTicks, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」的 dwellTicks 不得为负：" + step.DwellTicks));
                 }
 
                 if (step.WithinTicks < 0)
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」的 withinTicks 不得为负：" + step.WithinTicks);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NegativeWithinTicks, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」的 withinTicks 不得为负：" + step.WithinTicks));
                 }
 
                 if (step.Until == null && step.WithinTicks != 0)
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」没有完成条件，withinTicks 须为 0：" + step.WithinTicks);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.StrayWithinTicks, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」没有完成条件，withinTicks 须为 0：" + step.WithinTicks));
                 }
 
                 if (step.FilmSpeed < 0)
                 {
-                    faults.Add("场面 " + id + " 步骤「" + step.Name + "」的 filmSpeed 不得为负：" + step.FilmSpeed);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NegativeFilmSpeed, id,
+                        "场面 " + id + " 步骤「" + step.Name + "」的 filmSpeed 不得为负：" + step.FilmSpeed));
                 }
 
                 declared.Add(step.Name);
@@ -212,38 +269,43 @@ internal static class RimRunnerSceneRegistry
         return faults;
     }
 
-    internal static List<string> ShotFaults(string id, IReadOnlyList<RimRunnerSceneStep> steps,
+    internal static List<RimRunnerSceneFault> ShotFaults(string id, IReadOnlyList<RimRunnerSceneStep> steps,
         IReadOnlyList<RimRunnerShot> shots)
     {
-        var faults = new List<string>();
+        var faults = new List<RimRunnerSceneFault>();
         var stepNames = new HashSet<string>(steps.Select(step => step.Name), StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (RimRunnerShot shot in shots)
         {
             if (shot == null)
             {
-                faults.Add("场面 " + id + " 的镜头表里有 null");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NullShot, id,
+                    "场面 " + id + " 的镜头表里有 null"));
                 continue;
             }
 
             string where = "场面 " + id + " 镜头「" + shot.Name + "」";
             if (string.IsNullOrWhiteSpace(shot.Name) || shot.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             {
-                faults.Add("场面 " + id + " 的镜头名为空或含文件名不允许的字符：「" + shot.Name + "」");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadShotName, shot.Name,
+                    "场面 " + id + " 的镜头名为空或含文件名不允许的字符：「" + shot.Name + "」"));
             }
             else if (!seen.Add(shot.Name))
             {
-                faults.Add(where + "重名");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.DuplicateShotName, shot.Name,
+                    where + "重名"));
             }
 
             if (shot.Setup != null && !stepNames.Contains(shot.Setup))
             {
-                faults.Add(where + "的 Setup 不是本场面的步骤：" + shot.Setup);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.SetupNotStep, shot.Name,
+                    where + "的 Setup 不是本场面的步骤：" + shot.Setup));
             }
 
             if (shot.Through != null && !stepNames.Contains(shot.Through))
             {
-                faults.Add(where + "的 Through 不是本场面的步骤：" + shot.Through);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.ThroughNotStep, shot.Name,
+                    where + "的 Through 不是本场面的步骤：" + shot.Through));
             }
 
             List<string>? path = null;
@@ -260,44 +322,52 @@ internal static class RimRunnerSceneRegistry
             }
             if (shot.Setup != null && stepNames.Contains(shot.Setup) && path != null && !path.Contains(shot.Setup))
             {
-                faults.Add(where + "的 Setup「" + shot.Setup + "」不在 Through「" + shot.Through + "」的路径上");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.SetupOffPath, shot.Name,
+                    where + "的 Setup「" + shot.Setup + "」不在 Through「" + shot.Through + "」的路径上"));
             }
 
             RimRunnerShotOutput output = shot.Output;
             if (output == null)
             {
-                faults.Add(where + "没有 Output");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NoOutput, shot.Name,
+                    where + "没有 Output"));
             }
             else
             {
                 if (output.Partial)
                 {
-                    faults.Add(where + "的输出尺寸宽高只指定一个：宽高须同时指定，或同时留空（取 windowSize）");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.PartialOutputSize, shot.Name,
+                        where + "的输出尺寸宽高只指定一个：宽高须同时指定，或同时留空（取 windowSize）"));
                 }
                 else if (output.Declared && (output.Width <= 0 || output.Height <= 0))
                 {
-                    faults.Add(where + "的输出尺寸须为正：" + output.Width + "×" + output.Height);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NonPositiveOutputSize, shot.Name,
+                        where + "的输出尺寸须为正：" + output.Width + "×" + output.Height));
                 }
                 else if (output.Declared && output.Width < 1024 && output.Height < 768)
                 {
-                    faults.Add(where + "的输出尺寸宽 < 1024 与高 < 768 不得同时成立（收到 " + output.Width + "×" + output.Height
-                               + "）：原版此时重置 UI 缩放并记错误级日志");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.OutputBelowFloor, shot.Name,
+                        where + "的输出尺寸宽 < 1024 与高 < 768 不得同时成立（收到 " + output.Width + "×" + output.Height
+                        + "）：原版此时重置 UI 缩放并记错误级日志"));
                 }
 
                 const RimRunnerClipFormat known = RimRunnerClipFormat.Gif | RimRunnerClipFormat.Mp4;
                 if (shot.IsClip && (shot.ClipFormats == 0 || (shot.ClipFormats & ~known) != 0))
                 {
-                    faults.Add(where + "的格式须为 Gif 与 Mp4 的组合：" + shot.ClipFormats);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadClipFormats, shot.Name,
+                        where + "的格式须为 Gif 与 Mp4 的组合：" + shot.ClipFormats));
                 }
 
                 if (output.Declared && (shot.ClipFormats & RimRunnerClipFormat.Mp4) != 0 && (output.Width % 2 != 0 || output.Height % 2 != 0))
                 {
-                    faults.Add(where + "出 Mp4，宽高须为偶数（yuv420p）：" + output.Width + "×" + output.Height);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.OddMp4Size, shot.Name,
+                        where + "出 Mp4，宽高须为偶数（yuv420p）：" + output.Width + "×" + output.Height));
                 }
 
                 if (output.MaxBytes is <= 0)
                 {
-                    faults.Add(where + "的 MaxBytes 须为正");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadMaxBytes, shot.Name,
+                        where + "的 MaxBytes 须为正"));
                 }
             }
 
@@ -306,12 +376,14 @@ internal static class RimRunnerSceneRegistry
             {
                 if (point.Kind == RimRunnerShotCamera.TargetKind.Key && string.IsNullOrWhiteSpace(point.Key))
                 {
-                    faults.Add(where + "的机位登记键为空");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.EmptyCameraKey, shot.Name,
+                        where + "的机位登记键为空"));
                 }
 
                 if (point.Size < 0f || (point.Kind == RimRunnerShotCamera.TargetKind.Cell && point.Size <= 0f))
                 {
-                    faults.Add(where + "的机位视距须为正、留白不得为负：" + point.Size);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadCameraSize, shot.Name,
+                        where + "的机位视距须为正、留白不得为负：" + point.Size));
                 }
             }
 
@@ -322,36 +394,42 @@ internal static class RimRunnerSceneRegistry
 
             if (shot.Fps <= 0 || shot.Speed < 0)
             {
-                faults.Add(where + "的 fps 须为正、speed 不得为负：fps=" + shot.Fps + " speed=" + shot.Speed);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadFpsOrSpeed, shot.Name,
+                    where + "的 fps 须为正、speed 不得为负：fps=" + shot.Fps + " speed=" + shot.Speed));
                 continue;
             }
 
             if (shot.LeadSeconds < 0f || shot.TailSeconds < 0f)
             {
-                faults.Add(where + "的 leadSeconds 与 tailSeconds 不得为负：lead=" + shot.LeadSeconds
-                           + " tail=" + shot.TailSeconds);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NegativeLeadTail, shot.Name,
+                    where + "的 leadSeconds 与 tailSeconds 不得为负：lead=" + shot.LeadSeconds
+                    + " tail=" + shot.TailSeconds));
             }
 
             if (shot.Through == null && (shot.LeadSeconds + shot.TailSeconds) * shot.Fps < 2f)
             {
-                faults.Add(where + "不足两帧：（leadSeconds " + shot.LeadSeconds + " + tailSeconds " + shot.TailSeconds
-                           + "）× fps " + shot.Fps);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.TooFewFrames, shot.Name,
+                    where + "不足两帧：（leadSeconds " + shot.LeadSeconds + " + tailSeconds " + shot.TailSeconds
+                    + "）× fps " + shot.Fps));
             }
 
             if (shot.Camera is RimRunnerShotPan pan && pan.Seconds <= 0f)
             {
-                faults.Add(where + "的摇镜时长须为正：" + pan.Seconds);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.NonPositivePanSeconds, shot.Name,
+                    where + "的摇镜时长须为正：" + pan.Seconds));
             }
 
             if (shot.Music != null && (string.IsNullOrWhiteSpace(shot.Music) || (shot.ClipFormats & RimRunnerClipFormat.Mp4) == 0))
             {
-                faults.Add(where + "的 music 须是非空的 SongDef defName，且格式带 Mp4（只有 Mp4 有音轨）：「" + shot.Music + "」");
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.BadMusic, shot.Name,
+                    where + "的 music 须是非空的 SongDef defName，且格式带 Mp4（只有 Mp4 有音轨）：「" + shot.Music + "」"));
             }
 
             if (shot.Speed * GenTicks.TicksPerRealSecond % shot.Fps != 0)
             {
-                faults.Add(where + "每帧推进的 tick 数不是整数：speed " + shot.Speed + " × "
-                           + GenTicks.TicksPerRealSecond + " / fps " + shot.Fps);
+                faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.ShotFpsNotWhole, shot.Name,
+                    where + "每帧推进的 tick 数不是整数：speed " + shot.Speed + " × "
+                    + GenTicks.TicksPerRealSecond + " / fps " + shot.Fps));
             }
 
             if (path == null)
@@ -375,13 +453,15 @@ internal static class RimRunnerSceneRegistry
                 int speed = shot.SpeedForStep(step);
                 if (step.FilmSpeed > 0 && speed != shot.Speed && speed * GenTicks.TicksPerRealSecond % shot.Fps != 0)
                 {
-                    faults.Add(where + "步骤「" + step.Name + "」每帧推进的 tick 数不是整数：倍速 " + speed + " × "
-                               + GenTicks.TicksPerRealSecond + " / fps " + shot.Fps);
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.StepFpsNotWhole, shot.Name,
+                        where + "步骤「" + step.Name + "」每帧推进的 tick 数不是整数：倍速 " + speed + " × "
+                        + GenTicks.TicksPerRealSecond + " / fps " + shot.Fps));
                 }
 
                 if (speed == 0 && (step.Until != null || step.DwellTicks > 0))
                 {
-                    faults.Add(where + "步骤「" + step.Name + "」的有效倍速为 0，不能带完成条件或 dwellTicks");
+                    faults.Add(new RimRunnerSceneFault(RimRunnerSceneFaultKind.StepZeroSpeed, shot.Name,
+                        where + "步骤「" + step.Name + "」的有效倍速为 0，不能带完成条件或 dwellTicks"));
                 }
             }
         }

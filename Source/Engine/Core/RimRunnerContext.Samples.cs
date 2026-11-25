@@ -101,7 +101,7 @@ public sealed partial class RimRunnerReadoutContext
             WindowTicks = window.Ticks,
             Scope = new Dictionary<string, string>(scope)
             {
-                [WindowTicksSourceKey] = window.FromMeterSource ? "meter" : "case",
+                [WindowTicksSourceKey] = window.FromMeterSource ? WindowTicksFromMeter : WindowTicksFromCase,
                 [PinTickRateKey] = window.PinLabel
             },
             Rows = [.. rows.Select(row => new RimRunnerSampleRow(row.Key)
@@ -116,6 +116,12 @@ public sealed partial class RimRunnerReadoutContext
     internal const string PinTickRateKey = "pinTickRate";
 
     internal const string MixedPin = "mixed";
+
+    internal const string WindowTicksFromCase = "case";
+
+    internal const string WindowTicksFromMeter = "meter";
+
+    internal const string NoPinLabel = "none";
 
     private void CheckSampleDeclaration(string series, string segment)
     {
